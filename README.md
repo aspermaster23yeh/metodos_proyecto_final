@@ -1,6 +1,6 @@
-# Battery Streamlit Monitor
+# Proyecto Li-ion — Métodos Numéricos (ITT Tepic 5A)
 
-Monitor de carga Li-ion vía ADB + hub de gestión de proyecto del equipo.
+Monitor de carga Li-ion alineado al reporte técnico + centro de actividades del equipo.
 
 ## Requisitos
 
@@ -23,12 +23,12 @@ pip install -r requirements.txt
 streamlit run main.py
 ```
 
-Navegación multipágina (barra lateral de Streamlit):
+Navegación (asistente por pasos en español):
 
 | Página | Archivo | Descripción |
 |--------|---------|-------------|
-| **main** | `main.py` | Battery Lab: telemetría ADB, splines, Newton–Raphson |
-| **Project Hub** | `pages/2_Project_Hub.py` | To-do, Kanban, Gantt (02 abr – 08 may 2026) |
+| **Laboratorio** | `main.py` | Metodología, datos del reporte (12×5 min), sigmoide, Newton-Raphson |
+| **Centro del proyecto** | `pages/1_Centro_Proyecto.py` | Resumen, actividades y Gantt (02 abr – 08 may 2026) |
 
 ## Project Hub
 

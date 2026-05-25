@@ -28,7 +28,15 @@ STATUS_LABELS = {
     "done": "Hecho",
 }
 PROFILES = ("Análisis", "Diseño UX", "General")
-ASSIGNEES = ("Adán", "Ángel", "Checho", "Arath", "Gustavo")
+ASSIGNEES = ("Adán", "Ángel", "Checho", "Arath", "Gustavo", "Sergio")
+
+PHASE_COLORS = {
+    "Preparación": "#E8B923",
+    "Recolección": "#5FD38D",
+    "Modelación": "#00F5FF",
+    "Desarrollo UX": "#B388FF",
+    "Cierre": "#9BA4B5",
+}
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 TASKS_PATH = DATA_DIR / "project_tasks.json"
@@ -64,6 +72,7 @@ class Task:
     start: str
     end: str
     deliverable: str = ""
+    description: str = ""
     notes: str = ""
 
     def start_date(self) -> date:
@@ -108,6 +117,55 @@ def _stagger_dates(phase: str, index: int, count: int) -> tuple[str, str]:
     if end < start:
         end = start
     return start.isoformat(), end.isoformat()
+
+
+def apply_progressive_completed(tasks: list[Task]) -> list[Task]:
+    """Marca todas las tareas como hechas, repartidas día a día entre inicio y fin del proyecto."""
+    span_days = (PROJECT_END - PROJECT_START).days
+    n = len(tasks)
+    out: list[Task] = []
+    for i, t in enumerate(tasks):
+        offset = round(i * span_days / max(n - 1, 1))
+        day = PROJECT_START + timedelta(days=offset)
+        t.status = "done"
+        t.start = day.isoformat()
+        t.end = day.isoformat()
+        out.append(validate_task(t))
+    return out
+
+
+TASK_DESCRIPTIONS: dict[str, str] = {
+    "Definir dispositivo de prueba y documentar capacidad (mAh)": "Documentar mAh y condiciones del smartphone usado en el experimento.",
+    "Establecer protocolo de control (modo avión, brillo 0%)": "Controlar variables: modo avión, brillo mínimo, sin uso durante la carga.",
+    "Crear moodboard de inspiración visual": "Referencias visuales para el reporte y dashboard.",
+    "Diseñar bitácora digital de captura (Google Sheets)": "Plantilla para registro cada 5 minutos.",
+    "Definir paleta de colores y tipografía": "Identidad del reporte (crema, acento rojo, mono técnico).",
+    "Investigar curva teórica de carga del fabricante": "Benchmark del fabricante vs datos medidos.",
+    "Descarga controlada del equipo hasta 1–5%": "Paso 1 de la metodología: descarga hasta <5%.",
+    "Registro sistemático cada 5 min (cronómetro)": "12 muestras del reporte (0–52 min) — bitácora principal.",
+    "Documentar cambios térmicos durante la carga": "Observar efecto Joule y calentamiento.",
+    "Bocetos (wireframes) para presentación de resultados": "Estructura de diapositivas y dashboard.",
+    "Iconos personalizados (batería, rayo, calor, reloj)": "Iconografía del equipo UX.",
+    "Validar transferencia digital sin pérdida de datos": "Verificar CSV/Excel vs mediciones.",
+    "Gráfica de dispersión y detección de anomalías": "Dispersión t vs C(%) del experimento.",
+    "Regresión lineal y límite de precisión": "Ajuste lineal; comparar limitaciones vs sigmoide.",
+    "Regresión logarítmica/polinómica fase CV": "Modelo logístico C(t)=L/(1+e^{-k(t-t0)}).",
+    "Gráficos estéticos de fórmulas matemáticas": "Visualización publicable de ecuaciones.",
+    "Coeficiente R² para cada modelo": "Evaluar bondad de ajuste (objetivo R²→1).",
+    "Infografía fases CC vs CV": "Explicar 0–80% CC y 80–100% CV.",
+    "Dashboard visual de hallazgos": "Esta aplicación Streamlit + gráficas Plotly.",
+    "Comparativa: modelo matemático vs realidad": "Curva sigmoide vs puntos medidos.",
+    "Sustento teórico (efecto Joule, BMS)": "Capítulo teórico del reporte.",
+    "Mockup de app con modelo predictivo": "Prototipo Figma / HTML Newton-Raphson.",
+    "Pruebas de usabilidad en diapositivas": "Validar lectura de gráficas y métricas.",
+    "Jerarquía visual de datos clave": "Resaltar R², tiempo 80%, eficiencia.",
+    "Análisis de error y desviaciones del modelo": "Incluir fallo NaN en ajuste multivariable.",
+    "Conclusiones técnicas de la experimentación": "Sigmoide adecuada; Newton escalar sí converge.",
+    "Ensamblar reporte/presentación final": "Entrega 6 may 2026 — documento Word/PDF.",
+    "Revisión ortográfica y consistencia visual": "Revisión final UX.",
+    "Pitch verbal del modelo matemático": "Exposición del método y resultados.",
+    "Exportar PDF y prototipo Figma alta resolución": "Entregables finales de diseño.",
+}
 
 
 def build_seed_tasks() -> list[Task]:
@@ -177,10 +235,11 @@ def build_seed_tasks() -> list[Task]:
                 start=start,
                 end=end,
                 deliverable=deliverable,
-                notes="",
+                description=TASK_DESCRIPTIONS.get(title, ""),
+                notes="Completada según cronograma del reporte.",
             )
         )
-    return tasks
+    return apply_progressive_completed(tasks)
 
 
 def clamp_date(d: date) -> date:
@@ -222,6 +281,7 @@ def task_from_dict(d: dict[str, Any]) -> Task:
             start=str(d.get("start", PROJECT_START.isoformat())),
             end=str(d.get("end", PROJECT_END.isoformat())),
             deliverable=str(d.get("deliverable", "")),
+            description=str(d.get("description", "")),
             notes=str(d.get("notes", "")),
         )
     )
@@ -292,6 +352,7 @@ def tasks_to_dataframe(tasks: list[Task]):
                 "start": t.start,
                 "end": t.end,
                 "deliverable": t.deliverable,
+                "description": t.description,
                 "notes": t.notes,
             }
         )

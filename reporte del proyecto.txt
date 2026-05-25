@@ -1,0 +1,445 @@
+﻿Instituto Tecnológico de Tepic
+Ingeniería en Sistemas Computacionales
+Metodos Numericos
+Grupo 5A
+Reporte de Proyecto
+Unidad 4
+
+
+     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Integrantes:
+
+
+Ayala Gonzalez Jose Angel - 21400648
+Cortez Salinas Arath de Jesus – 20400722
+Soria Chavarin Jorge Adan – 20400830
+Robles Zambrano Sergio Michael - 20400810
+Garnica Talavera Gustavo Adolfo - 20400743
+
+
+
+
+Maestra: 
+
+
+Rubin Ramirez Norma Natalia
+
+
+
+
+
+
+
+
+
+
+
+
+MTI1  de 13:00-14:00 pm
+Fecha de entrega Miercoles 6 de Mayo del 2026
+REPORTE TÉCNICO DE MÉTODOS NUMÉRICOS
+Ajuste de Curva de Carga de Batería Li-ion mediante Regresión No Lineal
+1. Introducción
+En la era de la movilidad digital, la eficiencia de las baterías de iones de litio (Li-ion) es fundamental para el funcionamiento de dispositivos electrónicos. Sin embargo, el proceso de carga no es uniforme, ya que está gobernado por principios electroquímicos y sistemas de gestión de batería (BMS).
+Este proyecto analiza experimentalmente el comportamiento de carga de un smartphone mediante la recolección de datos cada 5 minutos. A través de técnicas de regresión matemática y ajuste de curvas, se busca modelar este fenómeno y explicar por qué la carga es más rápida al inicio que al final.
+2. Objetivos
+Objetivo General
+Modelar matemáticamente el proceso de carga de una batería para predecir el tiempo total de carga y analizar su comportamiento no lineal.
+Objetivos Específicos
+* Registrar el porcentaje de batería cada 5 minutos.
+* Identificar fases de carga: rápida (CC) y lenta (CV).
+* Ajustar modelos matemáticos (lineal, logístico, exponencial).
+* Evaluar el modelo mediante el coeficiente de determinación R2R^2R2.
+3. Marco Teórico
+3.1 Protocolo de Carga CC-CV
+* Corriente Constante (CC): crecimiento casi lineal (0%–80%).
+* Voltaje Constante (CV): desaceleración progresiva (80%–100%).
+
+
+
+
+
+
+3.2 Modelo Logístico (Sigmoide)
+  
+
+Donde:
+* L=100%
+* k: tasa de carga
+*   : punto de inflexión
+Este modelo representa correctamente sistemas con saturación, como la carga de baterías.
+4. Metodología
+   1. Descarga del dispositivo (<5%)
+   2. Registro de datos cada 5 minutos
+   3. Construcción de gráfica de dispersión
+   4. Ajuste de curva mediante regresión
+   5. Aplicación del método de Newton-Raphson
+   6. Evaluación del error
+5. Datos Experimentales
+Se recolectaron 12 pares (t,C):
+t (min)
+	C (%)
+	0
+	0
+	5
+	14
+	10
+	27
+	15
+	38
+	20
+	46
+	25
+	56
+	30
+	62
+	35
+	72
+	40
+	83
+	45
+	90
+	50
+	99
+	52
+	100
+	  5.1 Datos de otros modelos
+
+
+t (min)
+	C (%)
+	0
+	0
+	5
+	11
+	10
+	22
+	15
+	33
+	20
+	43
+	25
+	53
+	30
+	63
+	35
+	72
+	40
+	74
+	45
+	84
+	50
+	88
+	52
+	90
+	  
+
+6. Estimación Inicial (Semilla)
+Mediante linealización logit:
+  
+
+Se obtuvo:
+   *   ​ =0.1139
+   * ​   =21.71 min
+  
+
+7. Método de Newton-Raphson
+El problema se formula como un sistema no lineal:
+  
+
+Donde:  
+      * θ=(k,​     )
+      * J: Jacobiano
+      * F: gradiente del error
+8. Resultados y Problema Detectado
+Aunque el método iterativo se ejecutó, el resultado final fue:
+      * k = NaN  
+      *      = NaN
+Interpretación crítica
+Esto indica que:
+         * El método NO converge correctamente
+         * Hubo inestabilidad numérica
+         * Posibles causas:
+         * Mala condición inicial
+         * Divergencia del Jacobiano
+         * Sensibilidad del modelo logístico
+         * Datos extremos (0% y 100%)
+9. Análisis Físico del Sistema
+Eficiencia energética
+         * Energía total: 22.2 Wh
+         * Tiempo real: 52 min
+         * Tiempo ideal: 14.8 min
+Eficiencia aproximada:
+  
+
+Interpretación
+El 71.5% de la energía se pierde en:
+         * Calor (Efecto Joule)
+         * Conversión eléctrica
+         * Protección del BMS
+         * Fase CV
+10. Uso del Método Newton-Raphson (Aplicación Correcta)
+Para encontrar el tiempo en que se alcanza un porcentaje específico:
+  
+
+Ejemplo:
+         * Para 80% → 35.55 min
+         * Convergencia en 5 iteraciones
+Esto demuestra que:
+✔ El método funciona correctamente en problemas escalares
+ ✖ Falló en el ajuste multivariable
+
+
+
+
+
+
+
+
+11. Organización del Proyecto
+Equipo de Trabajo
+Nombre
+	Rol
+	Responsabilidad
+	Adán
+	Análisis
+	Recolección y modelación
+	Ángel
+	Análisis
+	Procesamiento de datos
+	Checho
+	Diseño UX
+	Identidad visual
+	Arath
+	Diseño UX
+	Interfaz
+	Gustavo
+	Diseño UX
+	Prototipo
+	
+
+12. Cronograma de Actividades
+Fases del Proyecto
+         1. Preparación
+         * Definir dispositivo
+         * Condiciones controladas
+         2. Recolección
+         * Registro cada 5 min
+         * Control térmico
+         3. Modelación
+         * Regresión lineal y logística
+         * Cálculo de R²
+         4. Diseño UX
+         * Dashboard
+         * Infografía CC-CV
+         * Mockup app
+         5. Cierre
+         * Análisis de error
+         * Conclusiones
+         * Presentación final
+13. Diseño UX del Proyecto
+El equipo de diseño desarrolló:
+         * Moodboard visual
+         * Paleta de colores
+         * Tipografía
+         * Iconos personalizados
+         * Dashboard de datos
+         * Mockup de app predictiva
+Objetivo UX
+Traducir datos complejos en visualizaciones claras e intuitivas.
+Documentación del código — Newton-Raphson Batería
+  
+  
+
+Parte 1 — La cabecera del documento HTML
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Newton-Raphson — Batería 6000mAh</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+	Aquí empieza cualquier página web. El <!DOCTYPE html> le dice al navegador que esto es HTML moderno. El lang="es" indica que el contenido está en español.
+Los dos <meta> son casi siempre los mismos en cualquier proyecto: el primero asegura que los caracteres especiales (tildes, ñ, etc.) se lean bien, y el segundo hace que la página se vea correcta en celulares.
+La línea del <script> importa Chart.js, una librería externa que dibuja las gráficas. Se trae de un CDN (un servidor público) para no tener que descargarla manualmente.
+Parte 2 — Las variables de color y estilo global (CSS)
+:root {
+  --bg: #f5f0e8;
+  --ink: #1a1208;
+  --card: #fffdf7;
+  --border: #d4c9b0;
+  --accent: #c8401a;
+  --accent2: #2a6e3f;
+  --accent3: #1a4a8a;
+  --muted: #8a7a60;
+  --grid: rgba(180,160,120,0.18);
+  --shadow: 4px 4px 0px #d4c9b0;
+}
+	Este bloque define la paleta de colores de toda la aplicación en un solo lugar. Usar variables CSS así (--nombre) es una buena práctica: si quieres cambiar el color rojo naranja del acento (--accent), lo cambias aquí y se actualiza en toda la página automáticamente.
+El diseño tiene un tono de papel antiguo (--bg es un crema suave) con texto casi negro (--ink), rojo ladrillo de acento, verde y azul para complementos.
+Parte 3 — El fondo cuadriculado del cuerpo
+
+
+body {
+  background: var(--bg);
+  font-family: 'DM Sans', sans-serif;
+  background-image: 
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+	El body (toda la página) tiene ese fondo de cuadrícula estilo papel milimétrico. Se logra con dos gradientes lineales cruzados: uno horizontal y otro vertical, cada 28 píxeles. Es puro CSS, sin imágenes.
+Parte 4 — El sistema de tarjetas y layout
+
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.2rem; }
+
+
+.card {
+  background: var(--card);
+  border: 2px solid var(--ink);
+  padding: 1.4rem;
+  box-shadow: var(--shadow);
+}
+	Todo el contenido vive dentro de tarjetas (.card). El layout usa CSS Grid: .grid-2 divide en dos columnas iguales y .grid-3 en tres. Esto organiza los paneles del dashboard de forma limpia y responsiva. La sombra desplazada (4px 4px 0px) le da ese efecto retro plano sin gradientes.
+Parte 5 — Las tipografías especiales
+
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Bebas+Neue&family=DM+Sans...');
+	Se usan tres fuentes con propósitos distintos:
+         * Bebas Neue → títulos grandes y números de impacto (como el "52 MIN")
+         * IBM Plex Mono → números técnicos, etiquetas, la tabla de iteraciones (monoespaciado = columnas alineadas)
+         * DM Sans → texto general y legible
+Parte 6 — El modelo matemático en JavaScript
+
+
+const L  = 100;       // capacidad máxima (100%)
+const k  = 0.11850;   // tasa de crecimiento de la curva
+const t0 = 23.85;     // punto de inflexión (donde la carga sube más rápido)
+
+
+function C(t)  { return L / (1 + Math.exp(-k * (t - t0))); }
+function Cp(t) { const e = Math.exp(-k*(t-t0)); return L * k * e / Math.pow(1+e, 2); }
+	Aquí está el corazón matemático. Se definen dos funciones:
+         * C(t) — la curva sigmoidal que modela cómo carga la batería con el tiempo. Devuelve el porcentaje de carga en el minuto t.
+         * Cp(t) — la derivada de C(t), necesaria para Newton-Raphson. Indica qué tan rápido está cambiando la carga en ese instante.
+Los parámetros L, k y t0 fueron calculados previamente con gradiente descendente (se menciona en el comentario).
+Parte 7 — El algoritmo Newton-Raphson
+
+
+endfunction newtonRaphson(target, t_init=26, tol=1e-8, maxIter=50) {
+  const steps = [];
+  let t = t_init;
+
+
+  for (let n = 0; n < maxIter; n++) {
+    const ft  = C(t) - target;   // f(t) = C(t) - objetivo
+    const fpt = Cp(t);            // f'(t)
+
+
+    if (Math.abs(fpt) < 1e-14) break;  // si la derivada es casi 0, para
+
+
+    const t_new = t - ft / fpt;        // fórmula principal N-R
+    const delta = Math.abs(t_new - t); // error entre iteración y la siguiente
+
+
+    steps.push({ n, t, ft, fpt, t_new, delta }); // guarda cada paso
+
+
+    t = t_new;
+    if (delta < tol) break; // convergió → termina
+  }
+
+
+  return { t, steps, converged: steps[steps.length-1].delta < tol };
+}
+	Esta función implementa el método como tal. Parte de un tiempo inicial t_init = 26 min y en cada iteración aplica la fórmula t_nuevo = t - f(t)/f'(t). Guarda cada paso en un arreglo steps para luego mostrarlo en la tabla. Para cuando el error es menor que 1e-8 (convergencia).
+Parte 8 — La función que actualiza la interfaz
+
+
+function solveNR() {
+  const target = parseFloat(document.getElementById('targetPct').value);
+  ...
+  document.getElementById('resTime').textContent = `${mm} min ${ss} seg`;
+  document.getElementById('resBar').style.width = target + '%';
+  document.getElementById('resultBox').classList.add('show');
+  ...
+}
+	Esta función es el puente entre el cálculo y lo que ve el usuario. Lee el porcentaje que escribió en el input, llama a newtonRaphson(), y con los resultados actualiza: el tiempo mostrado, la barra de progreso, la tabla de iteraciones y el estado de convergencia. También llama a updateChartMarker() para poner el punto rojo en la gráfica.
+Parte 9 — La gráfica con Chart.js
+
+
+const chart = new Chart(ctx, {
+  type: 'line',
+  data: { datasets: [
+    { label: 'Modelo sigmoidal', ... },  // línea azul
+    { label: 'Datos medidos', type:'scatter', ... },  // puntos negros
+    { label: 'Solución N-R', data: [], type:'scatter', pointStyle:'crossRot', ... }  // cruz roja
+  ]}
+});
+	Se crea una gráfica con tres capas: la curva sigmoidal calculada (línea azul), los puntos de medición reales de la batería (puntos negros), y el marcador de la solución N-R (una cruz roja que se mueve cada vez que calculas). La función updateChartMarker(target, t) es la que mueve esa cruz.
+Parte 10 — La tabla de soluciones precalculadas
+
+
+const targets = [10,20,25,30,40,50,60,70,75,80,85,90,95,99];
+
+
+targets.forEach(tgt => {
+  const { t, steps, converged } = newtonRaphson(tgt);
+  // genera una fila en la tabla con t*, formato mm:ss, iteraciones y error
+});
+
+
+solveNR(); // ejecuta el cálculo inicial (80% por defecto)
+	Al cargar la página, automáticamente corre Newton-Raphson para 14 porcentajes distintos y llena la tabla completa de soluciones. La última línea solveNR() dispara el cálculo inicial con 80% para que la página no empiece vacía.
+14. Conclusiones
+         * La carga de baterías es un proceso no lineal (sigmoide).
+         * El modelo logístico es adecuado teóricamente.
+         * Newton-Raphson:
+         * ✔ Funciona en ecuaciones simples
+         * ✖ Puede fallar en sistemas complejos
+         * Los errores NaN invalidan el modelo final.
+15. Recomendaciones
+         * Usar métodos más robustos:
+         * Levenberg-Marquardt
+         * Gradiente descendente
+         * Eliminar datos extremos
+         * Usar software especializado (Python, MATLAB)
+16. Conclusión General
+El comportamiento de carga de una batería Li-ion sigue un modelo sigmoide influenciado por factores físicos y electrónicos. Aunque el modelo logístico describe correctamente la tendencia, su implementación mediante Newton-Raphson requiere condiciones numéricas estables para evitar errores y obtener resultados confiables.

@@ -1,7 +1,6 @@
 """
-ADB Battery Lab — Streamlit desktop monitor + spline smoothing + Newton–Raphson ETA @ 100%.
-Run: streamlit run main.py
-Requires: Android platform-tools (adb) on PATH, USB debugging enabled on device.
+Laboratorio de carga Li-ion — asistente por pasos (Streamlit).
+Ejecutar: streamlit run main.py
 """
 
 from __future__ import annotations
@@ -18,12 +17,29 @@ import streamlit as st
 from scipy.interpolate import UnivariateSpline
 from scipy.optimize import newton
 
+from battery_models import logistic_c, newton_time_for_target, report_fit_stats
+from report_data import (
+    CHARGE_TIME_REAL_MIN,
+    DELIVERY_DATE,
+    EFFICIENCY_PCT,
+    ENERGY_WH,
+    INSTITUTION,
+    K_RATE,
+    METHODOLOGY_STEPS,
+    NEWTON_80_ITER,
+    NEWTON_80_MIN,
+    SAMPLES_ALT,
+    SAMPLES_MAIN,
+    T0_INFL,
+    TEAM,
+    TIME_IDEAL_MIN,
+    WIZARD_LAB_STEPS,
+    samples_dataframe,
+)
 from theme import ACCENT_CYAN, ACCENT_YELLOW, BG, GRID, TEXT_MUTED, inject_global_style
+from wizard_ui import render_step_header, step_nav_buttons
 
 
-# ---------------------------------------------------------------------------
-# ADB extraction module (subprocess + parse)
-# ---------------------------------------------------------------------------
 @dataclass
 class BatteryReading:
     level: int | None
@@ -42,15 +58,13 @@ def run_dumpsys_battery(adb_bin: str = "adb", timeout_s: float = 12.0) -> str:
         timeout=timeout_s,
     )
     if result.returncode != 0:
-        raise RuntimeError(result.stderr.strip() or f"adb exit {result.returncode}")
+        raise RuntimeError(result.stderr.strip() or f"adb salió con código {result.returncode}")
     return result.stdout or ""
 
 
 def parse_dumpsys_battery(text: str) -> BatteryReading:
-    """Parse `dumpsys battery` for level, voltage, current, temperature."""
     level = voltage = current = None
     temp_raw: int | None = None
-
     for line in text.splitlines():
         m = re.match(r"^\s*level:\s*(\d+)\s*$", line, re.I)
         if m:
@@ -68,72 +82,33 @@ def parse_dumpsys_battery(text: str) -> BatteryReading:
         if m:
             current = int(m.group(1))
             continue
-
     temp_c = (temp_raw / 10.0) if temp_raw is not None else None
-    return BatteryReading(
-        level=level,
-        voltage_mv=voltage,
-        current_ua=current,
-        temperature_c=temp_c,
-        raw_text=text,
-        error=None,
-    )
+    return BatteryReading(level, voltage, current, temp_c, text, None)
 
 
 def fetch_battery_reading(adb_bin: str) -> BatteryReading:
     try:
-        text = run_dumpsys_battery(adb_bin=adb_bin)
-        return parse_dumpsys_battery(text)
-    except Exception as exc:  # noqa: BLE001 — surface to UI
-        return BatteryReading(
-            level=None,
-            voltage_mv=None,
-            current_ua=None,
-            temperature_c=None,
-            raw_text="",
-            error=str(exc),
-        )
+        return parse_dumpsys_battery(run_dumpsys_battery(adb_bin))
+    except Exception as exc:  # noqa: BLE001
+        return BatteryReading(None, None, None, None, "", str(exc))
 
 
-# ---------------------------------------------------------------------------
-# Numeric engine: spline smoothing + Newton–Raphson for t @ SoC=100%
-# ---------------------------------------------------------------------------
 class BatteryNumericEngine:
-    """
-    Fits a smoothing cubic spline SoC ≈ S(t) and uses Newton–Raphson on
-    f(t) = S(t) - 100 to estimate time-to-full (hours from t=0 anchor).
-    Goodness-of-fit vs samples: R² and SSR on smoothed vs observed levels.
-    """
-
     def __init__(self, times_h: np.ndarray, levels: np.ndarray) -> None:
         self._t = np.asarray(times_h, dtype=float).ravel()
         self._y = np.asarray(levels, dtype=float).ravel()
-        if self._t.size != self._y.size or self._t.size < 2:
-            raise ValueError("times_h and levels must have equal length >= 2")
         order = np.argsort(self._t)
-        self._t = self._t[order]
-        self._y = self._y[order]
-        ts: list[float] = []
-        ys: list[float] = []
-        for ti, yi in zip(self._t.tolist(), self._y.tolist()):
-            if ts and abs(ti - ts[-1]) < 1e-9:
-                ys[-1] = 0.5 * (ys[-1] + yi)
-            else:
-                ts.append(float(ti))
-                ys.append(float(yi))
-        self._t = np.asarray(ts, dtype=float)
-        self._y = np.asarray(ys, dtype=float)
+        self._t, self._y = self._t[order], self._y[order]
         self._spline: UnivariateSpline | None = None
-        self._s_smooth: float = 0.0
 
     def fit_smoothing_spline(self, smoothing: float | None = None) -> UnivariateSpline:
         n = self._t.size
         k = int(min(3, max(1, n - 1)))
-        if smoothing is None:
-            s = max(0.0, (n * float(np.var(self._y))) * 0.05) if n >= 4 else 0.0
-        else:
-            s = float(smoothing)
-        self._s_smooth = s
+        s = (
+            max(0.0, (n * float(np.var(self._y))) * 0.05)
+            if smoothing is None and n >= 4
+            else float(smoothing or 0.0)
+        )
         self._spline = UnivariateSpline(self._t, self._y, k=k, s=s)
         return self._spline
 
@@ -148,26 +123,13 @@ class BatteryNumericEngine:
             self.fit_smoothing_spline()
         assert self._spline is not None
         y_hat = self._spline(self._t)
-        y = self._y
-        ss_res = float(np.sum((y - y_hat) ** 2))
-        y_mean = float(np.mean(y))
-        ss_tot = float(np.sum((y - y_mean) ** 2))
-        r2 = 1.0 - (ss_res / ss_tot) if ss_tot > 0 else 1.0
-        return r2, ss_res
+        ss_res = float(np.sum((self._y - y_hat) ** 2))
+        ss_tot = float(np.sum((self._y - np.mean(self._y)) ** 2))
+        return (1.0 - ss_res / ss_tot if ss_tot > 0 else 1.0), ss_res
 
-    def time_to_soc_newton(
-        self,
-        target: float = 100.0,
-        tol: float = 1e-4,
-        maxiter: int = 80,
-    ) -> tuple[float | None, str]:
-        """
-        Solve S(t) - target = 0 with SciPy's scalar newton (Newton–Raphson + fallback).
-        Returns (t_star_hours, status_message).
-        """
+    def time_to_soc_newton(self, target: float = 100.0, tol: float = 1e-4, maxiter: int = 80):
         if self._spline is None:
             self.fit_smoothing_spline()
-        assert self._spline is not None
         sp = self._spline
         d1 = sp.derivative(n=1)
 
@@ -177,271 +139,236 @@ class BatteryNumericEngine:
         def fprime(tt: float) -> float:
             return float(d1(tt))
 
-        t_last = float(self._t[-1])
-        y_last = float(self._y[-1])
+        t_last, y_last = float(self._t[-1]), float(self._y[-1])
         if y_last >= target - 1e-6:
-            return t_last, "already at or above target (within spline)"
-
-        if self._t.size >= 2:
-            dt = max(self._t[-1] - self._t[-2], 1e-6)
-            slope = (self._y[-1] - self._y[-2]) / dt
-        else:
-            slope = 0.0
-
+            return t_last, "Ya alcanzó el objetivo"
+        dt = max(self._t[-1] - self._t[-2], 1e-6) if self._t.size >= 2 else 1e-6
+        slope = (self._y[-1] - self._y[-2]) / dt
         if slope <= 1e-6:
-            return None, "non-increasing series — cannot extrapolate charge ETA"
-
+            return None, "Serie no creciente"
         t0 = t_last + max((target - y_last) / slope, 1e-3)
-
         try:
-            root = newton(
-                func=f,
-                x0=t0,
-                fprime=fprime,
-                tol=tol,
-                maxiter=maxiter,
-            )
+            root = newton(f, t0, fprime=fprime, tol=tol, maxiter=maxiter)
         except RuntimeError as exc:
-            return None, f"Newton did not converge: {exc}"
-
-        if not np.isfinite(root):
-            return None, "non-finite root"
-
-        if root < float(self._t[0]):
-            return None, "root before first sample — check data"
-
-        return float(root), "converged"
+            return None, f"Sin convergencia: {exc}"
+        return (float(root), "Convergió") if np.isfinite(root) else (None, "Raíz no finita")
 
 
-# ---------------------------------------------------------------------------
-# Plotly figure
-# ---------------------------------------------------------------------------
-def build_experimental_figure(df: pd.DataFrame, t_smooth: np.ndarray, y_smooth: np.ndarray) -> go.Figure:
+def _fig_charge(
+    df: pd.DataFrame,
+    t_model: np.ndarray | None = None,
+    y_model: np.ndarray | None = None,
+    t_smooth_h: np.ndarray | None = None,
+    y_smooth: np.ndarray | None = None,
+) -> go.Figure:
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(
-            x=df["t_h"],
+            x=df["t_min"],
             y=df["level"],
-            mode="lines+markers",
-            name="SoC samples",
+            mode="markers+lines",
+            name="Medido",
             line=dict(color=ACCENT_YELLOW, width=1),
-            marker=dict(size=7, color=ACCENT_YELLOW, line=dict(width=0)),
+            marker=dict(size=8, color=ACCENT_YELLOW),
         )
     )
-    fig.add_trace(
-        go.Scatter(
-            x=t_smooth,
-            y=y_smooth,
-            mode="lines",
-            name="Spline model S(t)",
-            line=dict(color=ACCENT_CYAN, width=2),
+    if t_model is not None and y_model is not None:
+        fig.add_trace(
+            go.Scatter(
+                x=t_model,
+                y=y_model,
+                mode="lines",
+                name="Sigmoide C(t)",
+                line=dict(color=ACCENT_CYAN, width=2),
+            )
         )
-    )
+    if t_smooth_h is not None and y_smooth is not None:
+        fig.add_trace(
+            go.Scatter(
+                x=t_smooth_h * 60,
+                y=y_smooth,
+                mode="lines",
+                name="Spline S(t)",
+                line=dict(color="#B388FF", width=1, dash="dot"),
+            )
+        )
+    fig.add_hline(y=80, line_dash="dash", line_color=TEXT_MUTED, annotation_text="80% CC→CV")
     fig.add_hline(y=100, line_dash="dash", line_color=TEXT_MUTED, annotation_text="100%")
     fig.update_layout(
         template="plotly_dark",
         paper_bgcolor=BG,
         plot_bgcolor=BG,
-        font=dict(family="JetBrains Mono, monospace", color=TEXT_MUTED, size=12),
-        title=dict(
-            text="Experimental Visualization — State of Charge vs. time",
-            font=dict(color=ACCENT_CYAN, size=16),
-        ),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
-        margin=dict(l=48, r=24, t=64, b=48),
-        xaxis=dict(
-            title="t (h) — anchored at session start",
-            gridcolor=GRID,
-            zerolinecolor=GRID,
-        ),
-        yaxis=dict(
-            title="SoC (%)",
-            range=[0, 105],
-            gridcolor=GRID,
-            zerolinecolor=GRID,
-        ),
-        hovermode="x unified",
-        height=520,
+        title=dict(text="Carga (%) vs tiempo (min)", font=dict(color=ACCENT_CYAN)),
+        xaxis_title="t (min)",
+        yaxis_title="C (%)",
+        yaxis=dict(range=[0, 105]),
+        height=480,
+        legend=dict(orientation="h", y=1.05),
     )
     return fig
 
 
-def _demo_series(n: int = 36) -> pd.DataFrame:
-    """Synthetic monotonic charge curve for UI preview without adb."""
-    t_h = np.linspace(0, 1.25, n)
-    levels = 22 + 78 * (1 - np.exp(-1.4 * t_h))
-    return pd.DataFrame({"t_h": t_h, "level": levels})
+def _ensure_data() -> pd.DataFrame:
+    if "lab_df" not in st.session_state:
+        st.session_state.lab_df = samples_dataframe()
+    return st.session_state.lab_df
+
+
+def step_inicio() -> None:
+    st.subheader("Proyecto: ajuste de curva Li-ion")
+    st.caption(INSTITUTION)
+    st.markdown(
+        """
+        Modelar matemáticamente la **carga de una batería** para predecir el tiempo total
+        y explicar por qué los primeros minutos son más rápidos que el tramo final (protocolo **CC-CV**).
+        """
+    )
+    st.markdown(f"**Entrega:** {DELIVERY_DATE}")
+    st.markdown("#### Integrantes")
+    st.table(pd.DataFrame(TEAM, columns=["Nombre", "Rol", "Responsabilidad"]))
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Muestras del reporte", "12")
+    c2.metric("Intervalo", "5 min")
+    c3.metric("Duración real", f"{CHARGE_TIME_REAL_MIN:.0f} min")
+
+
+def step_metodologia() -> None:
+    st.subheader("Metodología experimental")
+    for num, titulo, desc in METHODOLOGY_STEPS:
+        st.markdown(f"**{num}. {titulo}** — {desc}")
+    st.markdown("#### Fases CC-CV")
+    c1, c2 = st.columns(2)
+    with c1:
+        st.success("**CC (0–80%)** — corriente casi constante; crecimiento rápido.")
+    with c2:
+        st.warning("**CV (80–100%)** — voltaje fijo; corriente baja; curva se aplana.")
+    st.latex(r"C(t)=\frac{L}{1+e^{-k(t-t_0)}},\quad L=100\%")
+
+
+def step_recoleccion() -> None:
+    st.subheader("Recolección de muestras")
+    fuente = st.radio(
+        "Fuente de datos",
+        ["Reporte (12 mediciones)", "ADB en vivo", "Comparar 2º dispositivo"],
+        horizontal=True,
+    )
+    if fuente == "Reporte (12 mediciones)":
+        st.session_state.lab_df = samples_dataframe()
+    elif fuente == "Comparar 2º dispositivo":
+        st.session_state.lab_df = samples_dataframe(SAMPLES_ALT)
+    else:
+        adb = st.text_input("Ruta adb", value="adb")
+        if st.button("Tomar lectura ahora"):
+            r = fetch_battery_reading(adb)
+            if r.error:
+                st.error(r.error)
+            elif r.level is not None:
+                if "live_rows" not in st.session_state:
+                    st.session_state.live_rows = []
+                st.session_state.live_rows.append(
+                    {"t_min": len(st.session_state.live_rows) * 5, "level": float(r.level), "t_h": len(st.session_state.live_rows) * 5 / 60}
+                )
+        if st.session_state.get("live_rows"):
+            st.session_state.lab_df = pd.DataFrame(st.session_state.live_rows)
+        if st.button("Cargar datos del reporte como base"):
+            st.session_state.lab_df = samples_dataframe()
+
+    df = _ensure_data()
+    st.dataframe(df[["t_min", "level"]], use_container_width=True, hide_index=True)
+    st.caption("Protocolo: modo avión, brillo 0%, registro cada 5 min desde <5% hasta 100%.")
+    t_m = np.linspace(0, float(df["t_min"].max()), 200)
+    st.plotly_chart(_fig_charge(df, t_m, logistic_c(t_m)), use_container_width=True)
+
+
+def step_modelo() -> None:
+    st.subheader("Modelación y R²")
+    df = _ensure_data()
+    stats = report_fit_stats(df)
+    t_line = np.linspace(0, float(df["t_min"].max()), 200)
+    y_log = logistic_c(t_line)
+    c1, c2, c3 = st.columns(3)
+    c1.metric("R² logístico", f"{stats['r2_logistic']:.4f}")
+    c2.metric("R² lineal", f"{stats['r2_linear']:.4f}")
+    c3.metric("Muestras", int(stats["n_samples"]))
+
+    engine = BatteryNumericEngine(df["t_h"].to_numpy(), df["level"].to_numpy())
+    engine.fit_smoothing_spline()
+    t_h = np.linspace(0, float(df["t_h"].max()) + 0.1, 200)
+    y_sp = engine.evaluate(t_h)
+    r2s, _ = engine.r2_and_ssr()
+    st.metric("R² spline (Lab)", f"{r2s:.4f}")
+    st.plotly_chart(_fig_charge(df, t_line, y_log, t_h, y_sp), use_container_width=True)
+    st.caption(f"Parámetros del reporte: k={K_RATE}, t₀={T0_INFL} min.")
+
+
+def step_newton() -> None:
+    st.subheader("Newton-Raphson")
+    st.markdown("Resolver **C(t) − objetivo = 0** para estimar en qué minuto se alcanza un porcentaje.")
+    objetivo = st.slider("Porcentaje objetivo (%)", 10, 99, 80)
+    t_star, msg, steps = newton_time_for_target(float(objetivo))
+    if t_star is not None:
+        mm = int(t_star)
+        ss = int(round((t_star - mm) * 60))
+        st.success(f"Tiempo estimado: **{mm} min {ss} s** — {msg}")
+    else:
+        st.error(msg)
+    if steps:
+        st.dataframe(pd.DataFrame(steps), use_container_width=True, hide_index=True)
+    st.info(
+        f"Referencia del reporte: 80% en **{NEWTON_80_MIN} min** "
+        f"({NEWTON_80_ITER} iteraciones). El ajuste multivariable (k, t₀) reportó NaN."
+    )
+
+
+def step_stats() -> None:
+    st.subheader("Resultados del reporte")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Energía", f"{ENERGY_WH} Wh")
+    c2.metric("Tiempo real", f"{CHARGE_TIME_REAL_MIN:.0f} min")
+    c3.metric("Tiempo ideal", f"{TIME_IDEAL_MIN:.1f} min")
+    c4.metric("Eficiencia útil", f"~{EFFICIENCY_PCT}%")
+    st.markdown(
+        """
+        **Conclusiones (reporte):**
+        - La carga sigue un comportamiento **sigmoide** (no lineal).
+        - Newton-Raphson **funciona** en el problema escalar (tiempo para un %).
+        - El ajuste simultáneo de parámetros puede **diverger** (NaN) — usar semillas estables o Levenberg-Marquardt.
+        """
+    )
+    st.markdown("**Recomendaciones:** gradiente descendente, eliminar extremos 0%/100% del ajuste global, validar con Python/MATLAB.")
 
 
 def main() -> None:
-    st.set_page_config(page_title="ADB Battery Lab", layout="wide", initial_sidebar_state="expanded")
+    st.set_page_config(
+        page_title="Laboratorio Li-ion",
+        page_icon="🔋",
+        layout="wide",
+        initial_sidebar_state="collapsed",
+    )
     inject_global_style()
 
-    if "t0" not in st.session_state:
-        st.session_state.t0 = time.time()
-    if "rows" not in st.session_state:
-        st.session_state.rows = []
-
-    st.sidebar.markdown("### Acquisition")
-    adb_bin = st.sidebar.text_input("adb binary", value="adb")
-    demo = st.sidebar.checkbox("Demo mode (no adb)", value=False)
-    poll_preset = st.sidebar.selectbox(
-        "Sampling preset",
-        ["Custom", "Metodología (5 min)", "Fast (8 s)"],
-        index=2,
-        help="Metodología alinea la recolección con intervalos de 5 min del protocolo.",
+    idx = render_step_header(
+        WIZARD_LAB_STEPS,
+        "lab_step",
+        "Laboratorio de batería",
+        "Asistente del proyecto de Métodos Numéricos — carga Li-ion",
     )
-    if poll_preset == "Metodología (5 min)":
-        poll_default = 300
-    elif poll_preset == "Fast (8 s)":
-        poll_default = 8
+    step_id = WIZARD_LAB_STEPS[idx][0]
+
+    if step_id == "inicio":
+        step_inicio()
+    elif step_id == "metodo":
+        step_metodologia()
+    elif step_id == "datos":
+        step_recoleccion()
+    elif step_id == "modelo":
+        step_modelo()
+    elif step_id == "newton":
+        step_newton()
     else:
-        poll_default = 8
-    poll_s = st.sidebar.slider("Auto-refresh (s)", 1, 600, poll_default)
-    if st.sidebar.button("Reset time anchor"):
-        st.session_state.t0 = time.time()
-        st.session_state.rows = []
-        st.rerun()
-    if st.sidebar.button("Clear samples"):
-        st.session_state.rows = []
-        st.rerun()
+        step_stats()
 
-    st.sidebar.markdown("### Newton–Raphson")
-    nr_tol = st.sidebar.number_input("Tolerance", value=1e-4, format="%.6f", min_value=1e-12)
-    nr_max = st.sidebar.number_input("Max iterations", min_value=5, max_value=500, value=80, step=5)
-
-    st.sidebar.markdown("### Spline smoothing")
-    smooth_override = st.sidebar.checkbox("Manual smoothing (s)", value=False)
-    smooth_s = st.sidebar.number_input(
-        "UnivariateSpline s",
-        min_value=0.0,
-        value=0.0,
-        step=0.01,
-        help="0 = let engine pick a small default when n≥4",
-        disabled=not smooth_override,
-    )
-
-    st.markdown(
-        f"<h1 style='color:{ACCENT_CYAN};margin-bottom:0.2rem;'>"
-        "CYBER-PHYSICAL BATTERY LAB"
-        "</h1>",
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        f"<p style='color:{ACCENT_YELLOW};font-size:0.95rem;margin-top:0;'>"
-        "Experimental telemetry · spline synthesis · Newton–Raphson full-charge horizon"
-        "</p>",
-        unsafe_allow_html=True,
-    )
-
-    if demo:
-        df = _demo_series()
-    else:
-        reading = fetch_battery_reading(adb_bin)
-        if reading.error:
-            st.warning(f"ADB error — showing last frame only. ({reading.error})")
-        if reading.level is not None and not reading.error:
-            now = time.time()
-            st.session_state.rows.append(
-                {
-                    "t_h": (now - st.session_state.t0) / 3600.0,
-                    "level": float(reading.level),
-                    "voltage_mv": reading.voltage_mv,
-                    "current_ua": reading.current_ua,
-                    "temperature_c": reading.temperature_c,
-                }
-            )
-        df = pd.DataFrame(st.session_state.rows)
-
-    fig: go.Figure | None = None
-    r2: float | None = None
-    ssr: float | None = None
-    t100: float | None = None
-    nr_status = "awaiting data"
-    t_obs_last: float | None = None
-
-    if df.empty or "level" not in df.columns:
-        fig = go.Figure()
-        fig.update_layout(
-            template="plotly_dark",
-            paper_bgcolor=BG,
-            plot_bgcolor=BG,
-            height=520,
-            title=dict(text="Awaiting telemetry", font=dict(color=ACCENT_CYAN)),
-        )
-    elif len(df) < 2:
-        nr_status = "need ≥ 2 samples"
-        fig = build_experimental_figure(df, df["t_h"].to_numpy(), df["level"].to_numpy())
-    else:
-        t_obs = df["t_h"].to_numpy(dtype=float)
-        y_obs = df["level"].to_numpy(dtype=float)
-        t_obs_last = float(t_obs[-1])
-        engine = BatteryNumericEngine(t_obs, y_obs)
-        if smooth_override:
-            engine.fit_smoothing_spline(smoothing=smooth_s if smooth_s > 0 else None)
-        else:
-            engine.fit_smoothing_spline(None)
-
-        t_min, t_max = float(t_obs.min()), float(t_obs.max())
-        span = max(0.05, t_max - t_min)
-        t_smooth = np.linspace(t_min, t_max + 0.35 * span, 400)
-        y_smooth = engine.evaluate(t_smooth)
-        fig = build_experimental_figure(df, t_smooth, y_smooth)
-        t100, nr_status = engine.time_to_soc_newton(target=100.0, tol=float(nr_tol), maxiter=int(nr_max))
-        r2, ssr = engine.r2_and_ssr()
-
-    col_viz, col_syn = st.columns([2.15, 1.0])
-
-    with col_viz:
-        st.markdown(
-            f"#### <span style='color:{ACCENT_YELLOW}'>Experimental Visualization</span>",
-            unsafe_allow_html=True,
-        )
-        st.latex(
-            r"\text{Observed SoC: } y_i \approx S(t_i), \quad "
-            r"S \in \mathcal{S}_k^{m} \ \text{(smoothing cubic spline)}"
-        )
-
-        if df.empty or "level" not in df.columns:
-            st.info("Collecting samples… connect device with USB debugging or enable **Demo mode**.")
-        elif len(df) < 2:
-            st.info("Need ≥ 2 samples for spline + Newton analysis.")
-
-        if fig is not None:
-            st.plotly_chart(fig, use_container_width=True)
-
-        if not demo and not df.empty:
-            last = df.iloc[-1]
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("SoC (%)", f"{last['level']:.0f}" if pd.notna(last.get("level")) else "—")
-            c2.metric("Voltage (mV)", f"{int(last['voltage_mv'])}" if pd.notna(last.get("voltage_mv")) else "—")
-            c3.metric("Current (µA)", f"{int(last['current_ua'])}" if pd.notna(last.get("current_ua")) else "—")
-            c4.metric("Temp (°C)", f"{last['temperature_c']:.1f}" if pd.notna(last.get("temperature_c")) else "—")
-
-    with col_syn:
-        st.markdown(
-            f"#### <span style='color:{ACCENT_CYAN}'>Model Synthesis</span>",
-            unsafe_allow_html=True,
-        )
-        st.latex(r"f(t) = S(t) - 100 \quad\Rightarrow\quad t_{n+1} = t_n - \frac{f(t_n)}{f'(t_n)}")
-        st.latex(
-            r"R^2 = 1 - \frac{\sum_i (y_i - \hat{y}_i)^2}{\sum_i (y_i - \bar{y})^2}, \quad "
-            r"\mathrm{SSR} = \sum_i (y_i - \hat{y}_i)^2"
-        )
-        st.metric("R² (spline vs samples)", f"{r2:.6f}" if r2 is not None else "—")
-        st.metric("SSR", f"{ssr:.4f}" if ssr is not None else "—")
-        if t100 is not None and t_obs_last is not None:
-            remain = max(0.0, (t100 - t_obs_last) * 60.0)
-            st.metric("t @ 100% (model horizon, h)", f"{t100:.4f}")
-            st.metric("Δ from last sample (min)", f"{remain:.2f}")
-        elif t100 is not None:
-            st.metric("t @ 100% (model horizon, h)", f"{t100:.4f}")
-        st.caption(nr_status)
-        st.latex(r"\hat{y}_i = S(t_i), \quad S \ \text{fitted via SciPy UnivariateSpline}")
-
-    if not demo:
-        time.sleep(float(poll_s))
-        st.rerun()
+    step_nav_buttons("lab_step", len(WIZARD_LAB_STEPS))
 
 
 if __name__ == "__main__":
