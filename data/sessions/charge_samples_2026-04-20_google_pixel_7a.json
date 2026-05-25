@@ -1,0 +1,131 @@
+{
+  "session_id": "google_pixel_7a",
+  "session_date": "2026-04-20",
+  "device_label": "Google Pixel 7a",
+  "platform": "android",
+  "notes": "Carga optimizada; temperatura estable vía ADB.",
+  "session_started": "2026-04-20T10:00:00",
+  "updated_at": "2026-05-25T11:34:42",
+  "rows": [
+    {
+      "timestamp": "2026-04-20T10:00:00",
+      "t_min": 0.0,
+      "t_h": 0.0,
+      "level": 0.0,
+      "voltage_mv": 3550,
+      "current_ua": 750000,
+      "temperature_c": 27.5,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-20T10:05:00",
+      "t_min": 5.0,
+      "t_h": 0.0833,
+      "level": 15.0,
+      "voltage_mv": 3685,
+      "current_ua": 750000,
+      "temperature_c": 27.9,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:00",
+      "t_min": 10.0,
+      "t_h": 0.1667,
+      "level": 28.0,
+      "voltage_mv": 3802,
+      "current_ua": 750000,
+      "temperature_c": 28.2,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-20T10:15:00",
+      "t_min": 15.0,
+      "t_h": 0.25,
+      "level": 39.0,
+      "voltage_mv": 3901,
+      "current_ua": 750000,
+      "temperature_c": 28.6,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-20T10:20:00",
+      "t_min": 20.0,
+      "t_h": 0.3333,
+      "level": 49.0,
+      "voltage_mv": 3991,
+      "current_ua": 750000,
+      "temperature_c": 28.9,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-20T10:25:00",
+      "t_min": 25.0,
+      "t_h": 0.4167,
+      "level": 58.0,
+      "voltage_mv": 4072,
+      "current_ua": 750000,
+      "temperature_c": 29.2,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-20T10:30:00",
+      "t_min": 30.0,
+      "t_h": 0.5,
+      "level": 66.0,
+      "voltage_mv": 4144,
+      "current_ua": 750000,
+      "temperature_c": 29.6,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-20T10:35:00",
+      "t_min": 35.0,
+      "t_h": 0.5833,
+      "level": 75.0,
+      "voltage_mv": 4225,
+      "current_ua": 750000,
+      "temperature_c": 29.9,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-20T10:40:00",
+      "t_min": 40.0,
+      "t_h": 0.6667,
+      "level": 84.0,
+      "voltage_mv": 4306,
+      "current_ua": 750000,
+      "temperature_c": 30.3,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-20T10:45:00",
+      "t_min": 45.0,
+      "t_h": 0.75,
+      "level": 91.0,
+      "voltage_mv": 4369,
+      "current_ua": 750000,
+      "temperature_c": 30.6,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-20T10:50:00",
+      "t_min": 49.0,
+      "t_h": 0.8167,
+      "level": 98.0,
+      "voltage_mv": 4432,
+      "current_ua": 180000,
+      "temperature_c": 31.0,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-20T10:55:00",
+      "t_min": 51.0,
+      "t_h": 0.85,
+      "level": 100.0,
+      "voltage_mv": 4450,
+      "current_ua": 180000,
+      "temperature_c": 31.4,
+      "source": "adb"
+    }
+  ]
+}

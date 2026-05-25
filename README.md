@@ -27,7 +27,7 @@ Navegación (asistente por pasos en español):
 
 | Página | Archivo | Descripción |
 |--------|---------|-------------|
-| **Laboratorio** | `main.py` | Metodología, bitácora ADB/manual, comparativa lineal/logística/spline, CC-CV, dos dispositivos, Newton batch |
+| **Laboratorio** | `main.py` | Metodología, bitácora ADB/manual, **historial de sesiones Android**, comparativa de modelos, Newton batch |
 | **Centro del proyecto** | `pages/1_Centro_Proyecto.py` | Resumen, actividades y Gantt (02 abr – 08 may 2026) |
 | **Conclusiones** | `pages/2_Conclusiones.py` | Qué hicimos, cómo, programación, diseño y conclusiones finales |
 
@@ -55,7 +55,8 @@ pages/
   2_Conclusiones.py
 data/
   project_tasks.json
-  charge_samples.json   # Bitácora en vivo (opcional)
+  charge_samples.json        # Bitácora en vivo (sesión actual)
+  sessions/                  # Historial: charge_samples_YYYYMMDD_dispositivo.json
 ```
 
 ## Próximos pasos (fuera del alcance actual)

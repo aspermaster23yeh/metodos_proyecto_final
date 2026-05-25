@@ -187,6 +187,51 @@ def fig_dual_devices(
     return fig
 
 
+def fig_session_vs_reference(
+    df_session: pd.DataFrame,
+    df_ref: pd.DataFrame,
+    label_session: str,
+    label_ref: str,
+) -> go.Figure:
+    """Comparación visual sesión del historial vs proyecto principal."""
+    t_max = max(float(df_session["t_min"].max()), float(df_ref["t_min"].max()), 52)
+    t_grid = np.linspace(0, t_max, 200)
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=df_ref["t_min"],
+            y=df_ref["level"],
+            mode="markers+lines",
+            name=f"{label_ref} (medido)",
+            line=dict(color=ACCENT_CYAN, width=2),
+            marker=dict(size=8, color=ACCENT_CYAN),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=df_session["t_min"],
+            y=df_session["level"],
+            mode="markers+lines",
+            name=f"{label_session} (medido)",
+            line=dict(color=ACCENT_YELLOW, width=2),
+            marker=dict(size=8, color=ACCENT_YELLOW),
+        )
+    )
+    fig.add_hline(y=80, line_dash="dash", line_color=TEXT_MUTED, annotation_text="80% CC→CV")
+    fig.update_layout(
+        template="plotly_dark",
+        paper_bgcolor=BG,
+        plot_bgcolor=BG,
+        title=dict(text="Sesión vs proyecto principal", font=dict(color=ACCENT_CYAN)),
+        xaxis_title="t (min)",
+        yaxis_title="C (%)",
+        yaxis=dict(range=[0, 105]),
+        height=520,
+        legend=dict(orientation="h", y=1.08),
+    )
+    return fig
+
+
 def fig_charge_simple(df: pd.DataFrame, t_cv_min: float | None = None) -> go.Figure:
     """Gráfica de recolección con marca CC-CV opcional."""
     # Docstring: gráfica simple (medidos + sigmoide de referencia) usada en el paso "Recolección".

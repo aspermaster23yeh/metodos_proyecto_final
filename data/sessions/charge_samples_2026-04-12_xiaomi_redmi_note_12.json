@@ -1,0 +1,151 @@
+{
+  "session_id": "xiaomi_redmi_note_12",
+  "session_date": "2026-04-12",
+  "device_label": "Xiaomi Redmi Note 12",
+  "platform": "android",
+  "notes": "Carga más lenta en fase CV; 6000 mAh nominal.",
+  "session_started": "2026-04-12T10:00:00",
+  "updated_at": "2026-05-25T11:34:42",
+  "rows": [
+    {
+      "timestamp": "2026-04-12T10:00:00",
+      "t_min": 0.0,
+      "t_h": 0.0,
+      "level": 0.0,
+      "voltage_mv": 3550,
+      "current_ua": 750000,
+      "temperature_c": 27.5,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-12T10:05:00",
+      "t_min": 5.0,
+      "t_h": 0.0833,
+      "level": 12.0,
+      "voltage_mv": 3658,
+      "current_ua": 750000,
+      "temperature_c": 27.9,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-12T10:10:00",
+      "t_min": 10.0,
+      "t_h": 0.1667,
+      "level": 23.0,
+      "voltage_mv": 3757,
+      "current_ua": 750000,
+      "temperature_c": 28.2,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-12T10:15:00",
+      "t_min": 15.0,
+      "t_h": 0.25,
+      "level": 33.0,
+      "voltage_mv": 3847,
+      "current_ua": 750000,
+      "temperature_c": 28.6,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-12T10:20:00",
+      "t_min": 20.0,
+      "t_h": 0.3333,
+      "level": 42.0,
+      "voltage_mv": 3928,
+      "current_ua": 750000,
+      "temperature_c": 28.9,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-12T10:25:00",
+      "t_min": 25.0,
+      "t_h": 0.4167,
+      "level": 51.0,
+      "voltage_mv": 4009,
+      "current_ua": 750000,
+      "temperature_c": 29.2,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-12T10:30:00",
+      "t_min": 30.0,
+      "t_h": 0.5,
+      "level": 59.0,
+      "voltage_mv": 4081,
+      "current_ua": 750000,
+      "temperature_c": 29.6,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-12T10:35:00",
+      "t_min": 35.0,
+      "t_h": 0.5833,
+      "level": 67.0,
+      "voltage_mv": 4153,
+      "current_ua": 750000,
+      "temperature_c": 29.9,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-12T10:40:00",
+      "t_min": 40.0,
+      "t_h": 0.6667,
+      "level": 75.0,
+      "voltage_mv": 4225,
+      "current_ua": 750000,
+      "temperature_c": 30.3,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-12T10:45:00",
+      "t_min": 45.0,
+      "t_h": 0.75,
+      "level": 82.0,
+      "voltage_mv": 4288,
+      "current_ua": 750000,
+      "temperature_c": 30.6,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-12T10:50:00",
+      "t_min": 50.0,
+      "t_h": 0.8333,
+      "level": 89.0,
+      "voltage_mv": 4351,
+      "current_ua": 750000,
+      "temperature_c": 31.0,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-12T10:55:00",
+      "t_min": 55.0,
+      "t_h": 0.9167,
+      "level": 94.0,
+      "voltage_mv": 4396,
+      "current_ua": 750000,
+      "temperature_c": 31.4,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-12T11:00:00",
+      "t_min": 58.0,
+      "t_h": 0.9667,
+      "level": 97.0,
+      "voltage_mv": 4423,
+      "current_ua": 180000,
+      "temperature_c": 31.7,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-12T11:05:00",
+      "t_min": 60.0,
+      "t_h": 1.0,
+      "level": 100.0,
+      "voltage_mv": 4450,
+      "current_ua": 180000,
+      "temperature_c": 32.0,
+      "source": "adb"
+    }
+  ]
+}

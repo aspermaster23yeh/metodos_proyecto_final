@@ -1,0 +1,131 @@
+{
+  "session_id": "samsung_galaxy_a54",
+  "session_date": "2026-04-10",
+  "device_label": "Samsung Galaxy A54",
+  "platform": "android",
+  "notes": "Android gama media — protocolo idéntico al reporte (modo avión, 5 min).",
+  "session_started": "2026-04-10T10:00:00",
+  "updated_at": "2026-05-25T11:34:42",
+  "rows": [
+    {
+      "timestamp": "2026-04-10T10:00:00",
+      "t_min": 0.0,
+      "t_h": 0.0,
+      "level": 0.0,
+      "voltage_mv": 3550,
+      "current_ua": 750000,
+      "temperature_c": 27.5,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-10T10:05:00",
+      "t_min": 5.0,
+      "t_h": 0.0833,
+      "level": 14.0,
+      "voltage_mv": 3676,
+      "current_ua": 750000,
+      "temperature_c": 27.9,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-10T10:10:00",
+      "t_min": 10.0,
+      "t_h": 0.1667,
+      "level": 27.0,
+      "voltage_mv": 3793,
+      "current_ua": 750000,
+      "temperature_c": 28.2,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-10T10:15:00",
+      "t_min": 15.0,
+      "t_h": 0.25,
+      "level": 38.0,
+      "voltage_mv": 3892,
+      "current_ua": 750000,
+      "temperature_c": 28.6,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-10T10:20:00",
+      "t_min": 20.0,
+      "t_h": 0.3333,
+      "level": 46.0,
+      "voltage_mv": 3964,
+      "current_ua": 750000,
+      "temperature_c": 28.9,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-10T10:25:00",
+      "t_min": 25.0,
+      "t_h": 0.4167,
+      "level": 56.0,
+      "voltage_mv": 4054,
+      "current_ua": 750000,
+      "temperature_c": 29.2,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-10T10:30:00",
+      "t_min": 30.0,
+      "t_h": 0.5,
+      "level": 62.0,
+      "voltage_mv": 4108,
+      "current_ua": 750000,
+      "temperature_c": 29.6,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-10T10:35:00",
+      "t_min": 35.0,
+      "t_h": 0.5833,
+      "level": 72.0,
+      "voltage_mv": 4198,
+      "current_ua": 750000,
+      "temperature_c": 29.9,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-10T10:40:00",
+      "t_min": 40.0,
+      "t_h": 0.6667,
+      "level": 83.0,
+      "voltage_mv": 4297,
+      "current_ua": 750000,
+      "temperature_c": 30.3,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-10T10:45:00",
+      "t_min": 45.0,
+      "t_h": 0.75,
+      "level": 90.0,
+      "voltage_mv": 4360,
+      "current_ua": 750000,
+      "temperature_c": 30.6,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-10T10:50:00",
+      "t_min": 50.0,
+      "t_h": 0.8333,
+      "level": 99.0,
+      "voltage_mv": 4441,
+      "current_ua": 180000,
+      "temperature_c": 31.0,
+      "source": "adb"
+    },
+    {
+      "timestamp": "2026-04-10T10:55:00",
+      "t_min": 52.0,
+      "t_h": 0.8667,
+      "level": 100.0,
+      "voltage_mv": 4450,
+      "current_ua": 180000,
+      "temperature_c": 31.4,
+      "source": "adb"
+    }
+  ]
+}

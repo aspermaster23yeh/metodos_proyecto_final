@@ -211,6 +211,34 @@ def comparison_verdict_es(cmp: ModelComparison) -> str:
     )
 
 
+def compare_to_reference(
+    df: pd.DataFrame,
+    ref_df: pd.DataFrame,
+    ref_label: str = "Proyecto principal",
+) -> dict[str, Any]:
+    """Compara una sesión contra el experimento de referencia."""
+    s = device_summary(df)
+    r = device_summary(ref_df)
+    cmp_s = compare_models(df)
+    cmp_r = compare_models(ref_df)
+    return {
+        "ref_label": ref_label,
+        "session_label": "Sesión seleccionada",
+        "delta_t100_min": float(s["t_100_min"]) - float(r["t_100_min"]),
+        "delta_final_level": float(s["final_level"]) - float(r["final_level"]),
+        "delta_r2_logistic": float(s["r2_logistic"]) - float(r["r2_logistic"]),
+        "delta_slope": (
+            (float(s["initial_slope_pct_per_min"]) - float(r["initial_slope_pct_per_min"]))
+            if s["initial_slope_pct_per_min"] is not None and r["initial_slope_pct_per_min"] is not None
+            else None
+        ),
+        "session": s,
+        "reference": r,
+        "session_cv_min": cmp_s.t_cv_min,
+        "reference_cv_min": cmp_r.t_cv_min,
+    }
+
+
 def device_summary(df: pd.DataFrame) -> dict[str, float | int | None]:
     # Devuelve un resumen estadístico de un dispositivo (R², pendiente inicial, tiempo total).
     stats = report_fit_stats(df)
