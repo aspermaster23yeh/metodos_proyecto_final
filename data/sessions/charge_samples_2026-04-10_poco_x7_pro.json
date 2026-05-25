@@ -5,7 +5,7 @@
   "platform": "android",
   "notes": "Dispositivo principal del proyecto ITT. Bitácora experimental del reporte (modo avión, muestreo cada 5 min, lectura ADB).",
   "session_started": "2026-04-10T10:00:00",
-  "updated_at": "2026-05-25T12:37:06",
+  "updated_at": "2026-05-25T12:46:32",
   "rows": [
     {
       "timestamp": "2026-04-10T10:00:00",
