@@ -9,6 +9,7 @@ import re
 import subprocess
 import time
 from dataclasses import dataclass
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -36,6 +37,7 @@ from report_data import (
     WIZARD_LAB_STEPS,
     samples_dataframe,
 )
+from sample_store import clear_session, export_csv_bytes, load_session, rows_to_dataframe, save_session
 from theme import ACCENT_CYAN, ACCENT_YELLOW, BG, GRID, TEXT_MUTED, inject_global_style
 from wizard_ui import render_step_header, step_nav_buttons
 
@@ -91,6 +93,95 @@ def fetch_battery_reading(adb_bin: str) -> BatteryReading:
         return parse_dumpsys_battery(run_dumpsys_battery(adb_bin))
     except Exception as exc:  # noqa: BLE001
         return BatteryReading(None, None, None, None, "", str(exc))
+
+
+def list_adb_devices(adb_bin: str = "adb") -> tuple[list[str], str | None]:
+    """Lista dispositivos Android conectados por USB/Wi‑Fi debugging."""
+    try:
+        result = subprocess.run(
+            [adb_bin, "devices", "-l"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode != 0:
+            return [], result.stderr.strip() or "Error al ejecutar adb devices"
+        devices: list[str] = []
+        for line in result.stdout.splitlines():
+            line = line.strip()
+            if not line or line.startswith("List of"):
+                continue
+            parts = line.split()
+            if len(parts) >= 2 and parts[1] == "device":
+                devices.append(parts[0])
+        return devices, None
+    except FileNotFoundError:
+        return [], "No se encontró `adb`. Instala Android platform-tools."
+    except Exception as exc:  # noqa: BLE001
+        return [], str(exc)
+
+
+def _init_live_state() -> None:
+    if "live_rows" not in st.session_state:
+        data = load_session()
+        st.session_state.live_rows = list(data.get("rows", []))
+    if "live_t0" not in st.session_state:
+        st.session_state.live_t0 = time.time()
+    if "live_monitoring" not in st.session_state:
+        st.session_state.live_monitoring = False
+    if "last_sample_ts" not in st.session_state:
+        st.session_state.last_sample_ts = 0.0
+
+
+def _elapsed_min() -> float:
+    return (time.time() - st.session_state.live_t0) / 60.0
+
+
+def _append_live_row(
+    level: float,
+    *,
+    source: str,
+    voltage_mv: int | None = None,
+    current_ua: int | None = None,
+    temperature_c: float | None = None,
+) -> None:
+    t_min = _elapsed_min()
+    row = {
+        "timestamp": datetime.now().isoformat(timespec="seconds"),
+        "t_min": round(t_min, 2),
+        "t_h": round(t_min / 60.0, 4),
+        "level": float(level),
+        "voltage_mv": voltage_mv,
+        "current_ua": current_ua,
+        "temperature_c": temperature_c,
+        "source": source,
+    }
+    st.session_state.live_rows.append(row)
+    st.session_state.last_sample_ts = time.time()
+    save_session(
+        st.session_state.live_rows,
+        device_label=st.session_state.get("device_label", ""),
+        platform=st.session_state.get("platform", "android"),
+        session_started=st.session_state.get("session_started"),
+    )
+
+
+def _capture_adb_sample(adb_bin: str) -> bool:
+    reading = fetch_battery_reading(adb_bin)
+    if reading.error:
+        st.error(f"ADB: {reading.error}")
+        return False
+    if reading.level is None:
+        st.error("No se pudo leer el nivel de batería.")
+        return False
+    _append_live_row(
+        reading.level,
+        source="adb",
+        voltage_mv=reading.voltage_mv,
+        current_ua=reading.current_ua,
+        temperature_c=reading.temperature_c,
+    )
+    return True
 
 
 class BatteryNumericEngine:
@@ -247,36 +338,161 @@ def step_metodologia() -> None:
 
 def step_recoleccion() -> None:
     st.subheader("Recolección de muestras")
+    st.info(
+        "**Android:** lectura automática con USB y depuración USB activada (`adb`). "
+        "**iPhone:** Apple no permite ADB; usa **entrada manual** cada 5 min (mismo protocolo del reporte)."
+    )
+
     fuente = st.radio(
         "Fuente de datos",
-        ["Reporte (12 mediciones)", "ADB en vivo", "Comparar 2º dispositivo"],
+        ["Tiempo real (guardar bitácora)", "Reporte (12 mediciones)", "Comparar 2º dispositivo (reporte)"],
         horizontal=True,
     )
+
     if fuente == "Reporte (12 mediciones)":
         st.session_state.lab_df = samples_dataframe()
-    elif fuente == "Comparar 2º dispositivo":
+        st.session_state.live_monitoring = False
+    elif fuente == "Comparar 2º dispositivo (reporte)":
         st.session_state.lab_df = samples_dataframe(SAMPLES_ALT)
+        st.session_state.live_monitoring = False
     else:
-        adb = st.text_input("Ruta adb", value="adb")
-        if st.button("Tomar lectura ahora"):
-            r = fetch_battery_reading(adb)
-            if r.error:
-                st.error(r.error)
-            elif r.level is not None:
-                if "live_rows" not in st.session_state:
-                    st.session_state.live_rows = []
-                st.session_state.live_rows.append(
-                    {"t_min": len(st.session_state.live_rows) * 5, "level": float(r.level), "t_h": len(st.session_state.live_rows) * 5 / 60}
+        _init_live_state()
+        plataforma = st.radio(
+            "Tipo de dispositivo",
+            ["Android (ADB automático)", "Manual — iPhone u otro (tú ingresas el %)"],
+            horizontal=True,
+        )
+        es_android = plataforma.startswith("Android")
+        st.session_state.platform = "android" if es_android else "manual"
+        st.session_state.device_label = st.text_input(
+            "Nombre del dispositivo (opcional)",
+            value=st.session_state.get("device_label", ""),
+            placeholder="Ej. Samsung A54, iPhone 13",
+        )
+
+        intervalo_s = st.slider(
+            "Intervalo entre muestras automáticas (segundos)",
+            min_value=30,
+            max_value=600,
+            value=300,
+            step=30,
+            help="El reporte usa 5 min (300 s). En pruebas puedes bajar a 30 s.",
+        )
+
+        adb_bin = "adb"
+        if es_android:
+            adb_bin = st.text_input("Ruta de adb", value="adb", key="adb_path")
+            if st.button("Buscar dispositivos conectados"):
+                devices, err = list_adb_devices(adb_bin)
+                if err:
+                    st.error(err)
+                elif not devices:
+                    st.warning(
+                        "No hay dispositivos. Conecta el Android por USB, activa "
+                        "**Opciones de desarrollador → Depuración USB** y acepta la llave RSA."
+                    )
+                else:
+                    st.success("Conectados: " + ", ".join(devices))
+        else:
+            st.caption(
+                "En cada intervalo actualiza el % que ves en Ajustes → Batería y pulsa **Muestra ahora**, "
+                "o deja el valor actualizado antes del auto-muestreo."
+            )
+            manual_pct = st.number_input("Porcentaje actual (%)", 0, 100, 50, key="manual_pct")
+
+        st.markdown("#### Control en tiempo real")
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            if st.button("▶ Iniciar monitoreo", type="primary", disabled=st.session_state.live_monitoring):
+                st.session_state.live_monitoring = True
+                st.session_state.live_t0 = time.time()
+                st.session_state.last_sample_ts = 0.0
+                st.session_state.session_started = datetime.now().isoformat(timespec="seconds")
+                if es_android:
+                    _capture_adb_sample(adb_bin)
+                else:
+                    _append_live_row(float(manual_pct), source="manual")
+                st.rerun()
+        with c2:
+            if st.button("⏹ Detener", disabled=not st.session_state.live_monitoring):
+                st.session_state.live_monitoring = False
+                st.rerun()
+        with c3:
+            if st.button("📸 Muestra ahora"):
+                if es_android:
+                    if _capture_adb_sample(adb_bin):
+                        st.toast("Muestra guardada")
+                else:
+                    _append_live_row(float(manual_pct), source="manual")
+                    st.toast("Muestra guardada")
+                st.rerun()
+        with c4:
+            if st.button("💾 Guardar bitácora"):
+                save_session(
+                    st.session_state.live_rows,
+                    device_label=st.session_state.get("device_label", ""),
+                    platform=st.session_state.get("platform", "android"),
+                    session_started=st.session_state.get("session_started"),
                 )
-        if st.session_state.get("live_rows"):
-            st.session_state.lab_df = pd.DataFrame(st.session_state.live_rows)
-        if st.button("Cargar datos del reporte como base"):
-            st.session_state.lab_df = samples_dataframe()
+                st.success(f"Guardado en `data/charge_samples.json` ({len(st.session_state.live_rows)} filas)")
+
+        acc1, acc2, acc3 = st.columns(3)
+        with acc1:
+            if st.button("Cargar bitácora guardada"):
+                data = load_session()
+                st.session_state.live_rows = list(data.get("rows", []))
+                st.session_state.device_label = data.get("device_label", "")
+                st.rerun()
+        with acc2:
+            if st.button("Reiniciar bitácora"):
+                st.session_state.live_rows = []
+                st.session_state.live_monitoring = False
+                clear_session()
+                st.rerun()
+        with acc3:
+            st.download_button(
+                "Descargar CSV",
+                data=export_csv_bytes(st.session_state.live_rows),
+                file_name="bitacora_carga.csv",
+                mime="text/csv",
+                disabled=len(st.session_state.live_rows) == 0,
+            )
+
+        if st.session_state.live_monitoring:
+            st.markdown(
+                f"<p style='color:{ACCENT_YELLOW};font-weight:600;'>● EN VIVO — "
+                f"próxima muestra automática cada {intervalo_s}s</p>",
+                unsafe_allow_html=True,
+            )
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Muestras", len(st.session_state.live_rows))
+            m2.metric("Tiempo transcurrido (min)", f"{_elapsed_min():.1f}")
+            if st.session_state.live_rows:
+                m3.metric("Último %", f"{st.session_state.live_rows[-1]['level']:.0f}")
+
+        if st.session_state.live_rows:
+            st.session_state.lab_df = rows_to_dataframe(st.session_state.live_rows)
+        else:
+            st.warning("Sin muestras aún. Pulsa **Iniciar monitoreo** o **Muestra ahora**.")
+
+        # Bucle en vivo: toma muestra y recarga cuando pasa el intervalo
+        if st.session_state.live_monitoring:
+            now = time.time()
+            if now - st.session_state.last_sample_ts >= intervalo_s:
+                if es_android:
+                    _capture_adb_sample(adb_bin)
+                else:
+                    _append_live_row(float(manual_pct), source="manual")
+            time.sleep(2)
+            st.rerun()
 
     df = _ensure_data()
-    st.dataframe(df[["t_min", "level"]], use_container_width=True, hide_index=True)
+    if df.empty:
+        st.stop()
+    cols_show = [c for c in ["t_min", "level", "voltage_mv", "temperature_c", "source", "timestamp"] if c in df.columns]
+    st.dataframe(df[cols_show], use_container_width=True, hide_index=True)
     st.caption("Protocolo: modo avión, brillo 0%, registro cada 5 min desde <5% hasta 100%.")
-    t_m = np.linspace(0, float(df["t_min"].max()), 200)
+    t_m = np.linspace(0, max(float(df["t_min"].max()), 1), 200)
     st.plotly_chart(_fig_charge(df, t_m, logistic_c(t_m)), use_container_width=True)
 
 
