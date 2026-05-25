@@ -1,0 +1,476 @@
+{
+  "project_start": "2026-04-02",
+  "project_end": "2026-05-08",
+  "updated_at": "2026-05-24T22:42:29",
+  "tasks": [
+    {
+      "id": "task-preparación-1",
+      "title": "Definir dispositivo de prueba y documentar capacidad (mAh)",
+      "phase": "Preparación",
+      "assignees": [
+        "Adán",
+        "Ángel"
+      ],
+      "profile": "Análisis",
+      "status": "done",
+      "start": "2026-04-02",
+      "end": "2026-04-02",
+      "deliverable": "Protocolo de control",
+      "notes": ""
+    },
+    {
+      "id": "task-preparación-2",
+      "title": "Establecer protocolo de control (modo avión, brillo 0%)",
+      "phase": "Preparación",
+      "assignees": [
+        "Adán",
+        "Ángel"
+      ],
+      "profile": "Análisis",
+      "status": "todo",
+      "start": "2026-04-03",
+      "end": "2026-04-03",
+      "deliverable": "",
+      "notes": ""
+    },
+    {
+      "id": "task-preparación-3",
+      "title": "Crear moodboard de inspiración visual",
+      "phase": "Preparación",
+      "assignees": [
+        "Checho",
+        "Arath",
+        "Gustavo"
+      ],
+      "profile": "Diseño UX",
+      "status": "todo",
+      "start": "2026-04-04",
+      "end": "2026-04-04",
+      "deliverable": "",
+      "notes": ""
+    },
+    {
+      "id": "task-preparación-4",
+      "title": "Diseñar bitácora digital de captura (Google Sheets)",
+      "phase": "Preparación",
+      "assignees": [
+        "Adán",
+        "Ángel"
+      ],
+      "profile": "Análisis",
+      "status": "todo",
+      "start": "2026-04-05",
+      "end": "2026-04-05",
+      "deliverable": "Bitácora digital",
+      "notes": ""
+    },
+    {
+      "id": "task-preparación-5",
+      "title": "Definir paleta de colores y tipografía",
+      "phase": "Preparación",
+      "assignees": [
+        "Checho",
+        "Arath",
+        "Gustavo"
+      ],
+      "profile": "Diseño UX",
+      "status": "todo",
+      "start": "2026-04-06",
+      "end": "2026-04-06",
+      "deliverable": "Guía de estilo",
+      "notes": ""
+    },
+    {
+      "id": "task-preparación-6",
+      "title": "Investigar curva teórica de carga del fabricante",
+      "phase": "Preparación",
+      "assignees": [
+        "Adán",
+        "Ángel"
+      ],
+      "profile": "Análisis",
+      "status": "todo",
+      "start": "2026-04-07",
+      "end": "2026-04-07",
+      "deliverable": "Benchmark fabricante",
+      "notes": ""
+    },
+    {
+      "id": "task-recolección-1",
+      "title": "Descarga controlada del equipo hasta 1–5%",
+      "phase": "Recolección",
+      "assignees": [
+        "Adán",
+        "Ángel"
+      ],
+      "profile": "Análisis",
+      "status": "todo",
+      "start": "2026-04-09",
+      "end": "2026-04-09",
+      "deliverable": "Ciclo descarga",
+      "notes": ""
+    },
+    {
+      "id": "task-recolección-2",
+      "title": "Registro sistemático cada 5 min (cronómetro)",
+      "phase": "Recolección",
+      "assignees": [
+        "Adán",
+        "Ángel"
+      ],
+      "profile": "Análisis",
+      "status": "todo",
+      "start": "2026-04-10",
+      "end": "2026-04-10",
+      "deliverable": "Bitácora 5 min",
+      "notes": ""
+    },
+    {
+      "id": "task-recolección-3",
+      "title": "Documentar cambios térmicos durante la carga",
+      "phase": "Recolección",
+      "assignees": [
+        "Adán",
+        "Ángel"
+      ],
+      "profile": "Análisis",
+      "status": "todo",
+      "start": "2026-04-11",
+      "end": "2026-04-11",
+      "deliverable": "Log térmico",
+      "notes": ""
+    },
+    {
+      "id": "task-recolección-4",
+      "title": "Bocetos (wireframes) para presentación de resultados",
+      "phase": "Recolección",
+      "assignees": [
+        "Checho",
+        "Arath",
+        "Gustavo"
+      ],
+      "profile": "Diseño UX",
+      "status": "todo",
+      "start": "2026-04-12",
+      "end": "2026-04-12",
+      "deliverable": "Wireframes",
+      "notes": ""
+    },
+    {
+      "id": "task-recolección-5",
+      "title": "Iconos personalizados (batería, rayo, calor, reloj)",
+      "phase": "Recolección",
+      "assignees": [
+        "Checho",
+        "Arath",
+        "Gustavo"
+      ],
+      "profile": "Diseño UX",
+      "status": "todo",
+      "start": "2026-04-13",
+      "end": "2026-04-13",
+      "deliverable": "Set de iconos",
+      "notes": ""
+    },
+    {
+      "id": "task-recolección-6",
+      "title": "Validar transferencia digital sin pérdida de datos",
+      "phase": "Recolección",
+      "assignees": [
+        "Adán",
+        "Ángel"
+      ],
+      "profile": "Análisis",
+      "status": "todo",
+      "start": "2026-04-14",
+      "end": "2026-04-14",
+      "deliverable": "CSV validado",
+      "notes": ""
+    },
+    {
+      "id": "task-modelación-1",
+      "title": "Gráfica de dispersión y detección de anomalías",
+      "phase": "Modelación",
+      "assignees": [
+        "Adán",
+        "Ángel"
+      ],
+      "profile": "Análisis",
+      "status": "todo",
+      "start": "2026-04-19",
+      "end": "2026-04-19",
+      "deliverable": "Scatter limpio",
+      "notes": ""
+    },
+    {
+      "id": "task-modelación-2",
+      "title": "Regresión lineal y límite de precisión",
+      "phase": "Modelación",
+      "assignees": [
+        "Adán",
+        "Ángel"
+      ],
+      "profile": "Análisis",
+      "status": "todo",
+      "start": "2026-04-20",
+      "end": "2026-04-20",
+      "deliverable": "Modelo lineal",
+      "notes": ""
+    },
+    {
+      "id": "task-modelación-3",
+      "title": "Regresión logarítmica/polinómica fase CV",
+      "phase": "Modelación",
+      "assignees": [
+        "Adán",
+        "Ángel"
+      ],
+      "profile": "Análisis",
+      "status": "todo",
+      "start": "2026-04-21",
+      "end": "2026-04-21",
+      "deliverable": "Modelo log/polinómico",
+      "notes": ""
+    },
+    {
+      "id": "task-modelación-4",
+      "title": "Gráficos estéticos de fórmulas matemáticas",
+      "phase": "Modelación",
+      "assignees": [
+        "Checho",
+        "Arath",
+        "Gustavo"
+      ],
+      "profile": "Diseño UX",
+      "status": "todo",
+      "start": "2026-04-22",
+      "end": "2026-04-22",
+      "deliverable": "Gráficos publicación",
+      "notes": ""
+    },
+    {
+      "id": "task-modelación-5",
+      "title": "Coeficiente R² para cada modelo",
+      "phase": "Modelación",
+      "assignees": [
+        "Adán",
+        "Ángel"
+      ],
+      "profile": "Análisis",
+      "status": "todo",
+      "start": "2026-04-23",
+      "end": "2026-04-23",
+      "deliverable": "Tabla R²",
+      "notes": ""
+    },
+    {
+      "id": "task-modelación-6",
+      "title": "Infografía fases CC vs CV",
+      "phase": "Modelación",
+      "assignees": [
+        "Checho",
+        "Arath",
+        "Gustavo"
+      ],
+      "profile": "Diseño UX",
+      "status": "todo",
+      "start": "2026-04-24",
+      "end": "2026-04-24",
+      "deliverable": "Infografía CC-CV",
+      "notes": ""
+    },
+    {
+      "id": "task-desarrollo-ux-1",
+      "title": "Dashboard visual de hallazgos",
+      "phase": "Desarrollo UX",
+      "assignees": [
+        "Checho",
+        "Arath",
+        "Gustavo"
+      ],
+      "profile": "Diseño UX",
+      "status": "todo",
+      "start": "2026-04-22",
+      "end": "2026-04-23",
+      "deliverable": "Dashboard",
+      "notes": ""
+    },
+    {
+      "id": "task-desarrollo-ux-2",
+      "title": "Comparativa: modelo matemático vs realidad",
+      "phase": "Desarrollo UX",
+      "assignees": [
+        "Checho",
+        "Arath",
+        "Gustavo"
+      ],
+      "profile": "Diseño UX",
+      "status": "todo",
+      "start": "2026-04-24",
+      "end": "2026-04-25",
+      "deliverable": "Comparativa visual",
+      "notes": ""
+    },
+    {
+      "id": "task-desarrollo-ux-3",
+      "title": "Sustento teórico (efecto Joule, BMS)",
+      "phase": "Desarrollo UX",
+      "assignees": [
+        "Adán",
+        "Ángel"
+      ],
+      "profile": "Análisis",
+      "status": "todo",
+      "start": "2026-04-26",
+      "end": "2026-04-27",
+      "deliverable": "Capítulo teórico",
+      "notes": ""
+    },
+    {
+      "id": "task-desarrollo-ux-4",
+      "title": "Mockup de app con modelo predictivo",
+      "phase": "Desarrollo UX",
+      "assignees": [
+        "Checho",
+        "Arath",
+        "Gustavo"
+      ],
+      "profile": "Diseño UX",
+      "status": "todo",
+      "start": "2026-04-28",
+      "end": "2026-04-29",
+      "deliverable": "Mockup Figma",
+      "notes": ""
+    },
+    {
+      "id": "task-desarrollo-ux-5",
+      "title": "Pruebas de usabilidad en diapositivas",
+      "phase": "Desarrollo UX",
+      "assignees": [
+        "Checho",
+        "Arath",
+        "Gustavo"
+      ],
+      "profile": "Diseño UX",
+      "status": "todo",
+      "start": "2026-04-30",
+      "end": "2026-05-01",
+      "deliverable": "Informe usabilidad",
+      "notes": ""
+    },
+    {
+      "id": "task-desarrollo-ux-6",
+      "title": "Jerarquía visual de datos clave",
+      "phase": "Desarrollo UX",
+      "assignees": [
+        "Checho",
+        "Arath",
+        "Gustavo"
+      ],
+      "profile": "Diseño UX",
+      "status": "todo",
+      "start": "2026-05-02",
+      "end": "2026-05-03",
+      "deliverable": "Checklist jerarquía",
+      "notes": ""
+    },
+    {
+      "id": "task-cierre-1",
+      "title": "Análisis de error y desviaciones del modelo",
+      "phase": "Cierre",
+      "assignees": [
+        "Adán",
+        "Ángel"
+      ],
+      "profile": "Análisis",
+      "status": "todo",
+      "start": "2026-05-05",
+      "end": "2026-05-05",
+      "deliverable": "Informe de error",
+      "notes": ""
+    },
+    {
+      "id": "task-cierre-2",
+      "title": "Conclusiones técnicas de la experimentación",
+      "phase": "Cierre",
+      "assignees": [
+        "Adán",
+        "Ángel"
+      ],
+      "profile": "Análisis",
+      "status": "todo",
+      "start": "2026-05-06",
+      "end": "2026-05-06",
+      "deliverable": "Conclusiones",
+      "notes": ""
+    },
+    {
+      "id": "task-cierre-3",
+      "title": "Ensamblar reporte/presentación final",
+      "phase": "Cierre",
+      "assignees": [
+        "Adán",
+        "Ángel",
+        "Checho",
+        "Arath",
+        "Gustavo"
+      ],
+      "profile": "General",
+      "status": "todo",
+      "start": "2026-05-07",
+      "end": "2026-05-07",
+      "deliverable": "Reporte final",
+      "notes": ""
+    },
+    {
+      "id": "task-cierre-4",
+      "title": "Revisión ortográfica y consistencia visual",
+      "phase": "Cierre",
+      "assignees": [
+        "Checho",
+        "Arath",
+        "Gustavo"
+      ],
+      "profile": "Diseño UX",
+      "status": "todo",
+      "start": "2026-05-08",
+      "end": "2026-05-08",
+      "deliverable": "Documento revisado",
+      "notes": ""
+    },
+    {
+      "id": "task-cierre-5",
+      "title": "Pitch verbal del modelo matemático",
+      "phase": "Cierre",
+      "assignees": [
+        "Adán",
+        "Ángel",
+        "Checho",
+        "Arath",
+        "Gustavo"
+      ],
+      "profile": "General",
+      "status": "todo",
+      "start": "2026-05-08",
+      "end": "2026-05-08",
+      "deliverable": "Guión pitch",
+      "notes": ""
+    },
+    {
+      "id": "task-cierre-6",
+      "title": "Exportar PDF y prototipo Figma alta resolución",
+      "phase": "Cierre",
+      "assignees": [
+        "Checho",
+        "Arath",
+        "Gustavo"
+      ],
+      "profile": "Diseño UX",
+      "status": "todo",
+      "start": "2026-05-08",
+      "end": "2026-05-08",
+      "deliverable": "Entregables export",
+      "notes": ""
+    }
+  ]
+}
