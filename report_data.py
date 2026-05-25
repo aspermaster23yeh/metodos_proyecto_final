@@ -88,7 +88,13 @@ NEWTON_80_ITER = 5
 NEWTON_BATCH_TARGETS = [10, 20, 25, 30, 40, 50, 60, 70, 75, 80, 85, 90, 95, 99]
 # Lista de porcentajes objetivo para correr Newton-Raphson en lote y mostrar una tabla completa.
 
-DEVICE_MAIN_LABEL = "Dispositivo principal (reporte)"
+MAIN_DEVICE_NAME = "POCO X 7 Pro"
+# Teléfono del experimento principal (bitácora del reporte).
+MAIN_SESSION_DATE = "2026-04-10"
+MAIN_SESSION_FILENAME = "charge_samples_2026-04-10_poco_x7_pro.json"
+REFERENCE_LABEL = f"{MAIN_DEVICE_NAME} (proyecto principal)"
+
+DEVICE_MAIN_LABEL = MAIN_DEVICE_NAME
 # Etiqueta visible para el primer dispositivo en gráficas y tablas.
 DEVICE_ALT_LABEL = "Dispositivo alternativo (reporte)"
 # Etiqueta para el segundo dispositivo (comparativa).

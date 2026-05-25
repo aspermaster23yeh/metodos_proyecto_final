@@ -1,6 +1,6 @@
 # Proyecto Li-ion — Métodos Numéricos (ITT Tepic 5A)
 
-Monitor de carga Li-ion alineado al reporte técnico + centro de actividades del equipo.
+Monitor de carga Li-ion alineado al reporte técnico (dispositivo principal: **POCO X 7 Pro**) + centro de actividades del equipo.
 
 ## Requisitos
 

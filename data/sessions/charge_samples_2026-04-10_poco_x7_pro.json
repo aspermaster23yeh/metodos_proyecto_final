@@ -1,11 +1,11 @@
 {
-  "session_id": "samsung_galaxy_a54",
+  "session_id": "poco_x7_pro",
   "session_date": "2026-04-10",
-  "device_label": "Samsung Galaxy A54",
+  "device_label": "POCO X 7 Pro",
   "platform": "android",
-  "notes": "Android gama media — protocolo idéntico al reporte (modo avión, 5 min).",
+  "notes": "Dispositivo principal del proyecto ITT. Bitácora experimental del reporte (modo avión, muestreo cada 5 min, lectura ADB).",
   "session_started": "2026-04-10T10:00:00",
-  "updated_at": "2026-05-25T11:34:42",
+  "updated_at": "2026-05-25T12:37:06",
   "rows": [
     {
       "timestamp": "2026-04-10T10:00:00",

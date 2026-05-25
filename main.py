@@ -41,10 +41,13 @@ from report_data import (
     ENERGY_WH,
     INSTITUTION,
     K_RATE,
+    MAIN_DEVICE_NAME,
+    MAIN_SESSION_FILENAME,
     METHODOLOGY_STEPS,
     NEWTON_80_ITER,
     NEWTON_80_MIN,
     NEWTON_BATCH_TARGETS,
+    REFERENCE_LABEL,
     SAMPLES_ALT,
     SAMPLES_MAIN,
     T0_INFL,
@@ -54,7 +57,7 @@ from report_data import (
     samples_dataframe,
 )
 from sample_store import (
-    REFERENCE_LABEL,
+    SessionInfo,
     clear_session,
     ensure_demo_sessions,
     export_csv_bytes,
@@ -230,9 +233,11 @@ def step_inicio() -> None:
     st.markdown("#### Integrantes")
     st.table(pd.DataFrame(TEAM, columns=["Nombre", "Rol", "Responsabilidad"]))
     c1, c2, c3 = st.columns(3)
-    c1.metric("Muestras del reporte", "12")
-    c2.metric("Intervalo", "5 min")
-    c3.metric("Duración real", f"{CHARGE_TIME_REAL_MIN:.0f} min")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Dispositivo principal", MAIN_DEVICE_NAME)
+    c2.metric("Muestras del reporte", "12")
+    c3.metric("Intervalo", "5 min")
+    c4.metric("Duración real", f"{CHARGE_TIME_REAL_MIN:.0f} min")
 
 
 def step_metodologia() -> None:
@@ -256,9 +261,21 @@ def _render_historial_sesiones() -> None:
         st.warning("No hay sesiones en el historial.")
         return
 
-    opciones = {s.filename: f"{s.device_label} — {s.session_date} ({s.n_samples} muestras, {s.final_level:.0f}%)" for s in sessions}
-    elegido = st.selectbox("Seleccionar sesión Android", list(opciones.keys()), format_func=lambda k: opciones[k])
+    def _fmt_session(s: SessionInfo) -> str:
+        tag = " ★ principal" if s.is_main else ""
+        return f"{s.device_label} — {s.session_date} ({s.n_samples} muestras, {s.final_level:.0f}%){tag}"
+
+    keys = [s.filename for s in sessions]
+    default_ix = keys.index(MAIN_SESSION_FILENAME) if MAIN_SESSION_FILENAME in keys else 0
+    elegido = st.selectbox(
+        "Seleccionar sesión Android",
+        keys,
+        index=default_ix,
+        format_func=lambda k: _fmt_session(next(s for s in sessions if s.filename == k)),
+    )
     info = next(s for s in sessions if s.filename == elegido)
+    if info.is_main:
+        st.success(f"**{MAIN_DEVICE_NAME}** — dispositivo principal del proyecto (bitácora del reporte).")
     raw = load_session_file(elegido)
     df_sess = rows_to_dataframe(raw["rows"])
     df_ref = samples_dataframe(SAMPLES_MAIN)
@@ -283,7 +300,7 @@ def _render_historial_sesiones() -> None:
         m4.metric("Pendiente 0–5 min", f"{summ['initial_slope_pct_per_min']:.2f} %/min")
 
     diff = compare_to_reference(df_sess, df_ref, REFERENCE_LABEL)
-    st.markdown("#### Comparación vs proyecto principal")
+    st.markdown(f"#### Comparación vs {MAIN_DEVICE_NAME}")
     st.dataframe(
         pd.DataFrame(
             [
@@ -303,9 +320,9 @@ def _render_historial_sesiones() -> None:
     )
 
     if diff["delta_t100_min"] > 0:
-        st.info(f"Esta sesión tardó **{diff['delta_t100_min']:.0f} min más** que el dispositivo del reporte en llegar al tramo final.")
+        st.info(f"Esta sesión tardó **{diff['delta_t100_min']:.0f} min más** que **{MAIN_DEVICE_NAME}** en llegar al tramo final.")
     elif diff["delta_t100_min"] < 0:
-        st.success(f"Esta sesión fue **{abs(diff['delta_t100_min']):.0f} min más rápida** que el proyecto principal.")
+        st.success(f"Esta sesión fue **{abs(diff['delta_t100_min']):.0f} min más rápida** que **{MAIN_DEVICE_NAME}**.")
     if diff["delta_final_level"] < 0:
         st.warning("No alcanzó el mismo porcentaje final que el experimento de referencia (100%).")
 
@@ -399,7 +416,7 @@ def step_recoleccion() -> None:
         st.session_state.device_label = st.text_input(
             "Nombre del dispositivo (opcional)",
             value=st.session_state.get("device_label", ""),
-            placeholder="Ej. Samsung A54, iPhone 13",
+            placeholder="Ej. POCO X 7 Pro, iPhone 13",
         )
 
         intervalo_s = st.slider(
@@ -584,7 +601,7 @@ def step_modelo() -> None:
         )
 
     st.markdown("---")
-    st.markdown("#### Dos dispositivos del reporte")
+    st.markdown(f"#### {MAIN_DEVICE_NAME} vs dispositivo alternativo")
     df_main = samples_dataframe(SAMPLES_MAIN)
     df_alt = samples_dataframe(SAMPLES_ALT)
     s_main = device_summary(df_main)

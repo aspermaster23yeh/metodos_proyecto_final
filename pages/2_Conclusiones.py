@@ -18,6 +18,7 @@ from report_data import (
     EFFICIENCY_PCT,         # Eficiencia útil aproximada del proceso de carga (%).
     ENERGY_WH,              # Energía total medida en Watt-hora.
     INSTITUTION,            # Nombre de la institución (ITT Tepic).
+    MAIN_DEVICE_NAME,       # POCO X 7 Pro — teléfono del experimento principal.
     K_RATE,                 # Parámetro k de la curva logística (velocidad de carga).
     NEWTON_80_ITER,         # Iteraciones que tomó Newton-Raphson para llegar al 80%.
     NEWTON_80_MIN,          # Tiempo en minutos al que se alcanza 80% según Newton-Raphson.
@@ -212,7 +213,7 @@ def step_como() -> None:
     # Obtiene el DataFrame con las muestras experimentales del reporte.
     stats = report_fit_stats(df)
     # Calcula estadísticas del ajuste (R², número de muestras, duración máxima).
-    st.markdown("#### Datos del experimento principal")
+    st.markdown(f"#### Datos del experimento principal — {MAIN_DEVICE_NAME}")
     # Encabezado de la sección de métricas.
     m1, m2, m3, m4 = st.columns(4)
     # Cuatro columnas para mostrar 4 indicadores tipo "tarjeta".

@@ -216,7 +216,7 @@ TASK_DESCRIPTIONS: dict[str, str] = {
     "Definir paleta de colores y tipografía": "Identidad del reporte (crema, acento rojo, mono técnico).",
     "Investigar curva teórica de carga del fabricante": "Benchmark del fabricante vs datos medidos.",
     "Descarga controlada del equipo hasta 1–5%": "Paso 1 de la metodología: descarga hasta <5%.",
-    "Registro sistemático cada 5 min (cronómetro)": "12 muestras del reporte (0–52 min) — bitácora principal.",
+    "Registro sistemático cada 5 min (cronómetro)": "12 muestras POCO X 7 Pro (0–52 min) — bitácora principal del reporte.",
     "Documentar cambios térmicos durante la carga": "Observar efecto Joule y calentamiento.",
     "Bocetos (wireframes) para presentación de resultados": "Estructura de diapositivas y dashboard.",
     "Iconos personalizados (batería, rayo, calor, reloj)": "Iconografía del equipo UX.",

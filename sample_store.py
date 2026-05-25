@@ -11,11 +11,59 @@ from typing import Any
 
 import pandas as pd
 
+from report_data import (
+    MAIN_DEVICE_NAME,
+    MAIN_SESSION_DATE,
+    MAIN_SESSION_FILENAME,
+    REFERENCE_LABEL,
+    SAMPLES_MAIN,
+)
+
 DATA_DIR = Path(__file__).resolve().parent / "data"
 SESSIONS_DIR = DATA_DIR / "sessions"
 SAMPLES_PATH = DATA_DIR / "charge_samples.json"
 
-REFERENCE_LABEL = "Proyecto principal (reporte ITT)"
+LEGACY_MAIN_GLOB = "charge_samples_*_samsung_galaxy_a54.json"
+
+OTHER_DEMO_SESSIONS: list[tuple[str, str, str, list[tuple[int, int]]]] = [
+    (
+        "Xiaomi Redmi Note 12",
+        "2026-04-12",
+        "Carga más lenta en fase CV; 6000 mAh nominal.",
+        [
+            (0, 0), (5, 12), (10, 23), (15, 33), (20, 42), (25, 51),
+            (30, 59), (35, 67), (40, 75), (45, 82), (50, 89), (55, 94),
+            (58, 97), (60, 100),
+        ],
+    ),
+    (
+        "Motorola Edge 40",
+        "2026-04-15",
+        "CC más agresiva; alcanza 100% en ~50 min.",
+        [
+            (0, 0), (5, 16), (10, 30), (15, 41), (20, 52), (25, 61),
+            (30, 70), (35, 79), (40, 87), (45, 93), (48, 98), (50, 100),
+        ],
+    ),
+    (
+        "OPPO A78 5G",
+        "2026-04-18",
+        "Segundo perfil del reporte: no llega al 100% en la ventana de 52 min.",
+        [
+            (0, 0), (5, 11), (10, 22), (15, 33), (20, 43), (25, 53),
+            (30, 63), (35, 72), (40, 74), (45, 84), (50, 88), (52, 90),
+        ],
+    ),
+    (
+        "Google Pixel 7a",
+        "2026-04-20",
+        "Carga optimizada; temperatura estable vía ADB.",
+        [
+            (0, 0), (5, 15), (10, 28), (15, 39), (20, 49), (25, 58),
+            (30, 66), (35, 75), (40, 84), (45, 91), (49, 98), (51, 100),
+        ],
+    ),
+]
 
 
 @dataclass
@@ -28,6 +76,7 @@ class SessionInfo:
     t_100_min: float
     final_level: float
     notes: str
+    is_main: bool = False
 
 
 def _empty_payload() -> dict[str, Any]:
@@ -119,65 +168,48 @@ def _write_session_file(payload: dict[str, Any], filename: str | None = None) ->
     return path
 
 
-def ensure_demo_sessions() -> None:
-    """Crea sesiones de ejemplo si la carpeta está vacía."""
-    SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
-    existing = list(SESSIONS_DIR.glob("charge_samples_*.json"))
-    if existing:
-        return
+def _remove_legacy_main_sessions() -> None:
+    for path in SESSIONS_DIR.glob(LEGACY_MAIN_GLOB):
+        path.unlink(missing_ok=True)
 
-    demos: list[tuple[str, str, str, list[tuple[int, int]]]] = [
-        (
-            "Samsung Galaxy A54",
-            "2026-04-10",
-            "Android gama media — protocolo idéntico al reporte (modo avión, 5 min).",
-            [
-                (0, 0), (5, 14), (10, 27), (15, 38), (20, 46), (25, 56),
-                (30, 62), (35, 72), (40, 83), (45, 90), (50, 99), (52, 100),
-            ],
-        ),
-        (
-            "Xiaomi Redmi Note 12",
-            "2026-04-12",
-            "Carga más lenta en fase CV; 6000 mAh nominal.",
-            [
-                (0, 0), (5, 12), (10, 23), (15, 33), (20, 42), (25, 51),
-                (30, 59), (35, 67), (40, 75), (45, 82), (50, 89), (55, 94),
-                (58, 97), (60, 100),
-            ],
-        ),
-        (
-            "Motorola Edge 40",
-            "2026-04-15",
-            "CC más agresiva; alcanza 100% en ~50 min.",
-            [
-                (0, 0), (5, 16), (10, 30), (15, 41), (20, 52), (25, 61),
-                (30, 70), (35, 79), (40, 87), (45, 93), (48, 98), (50, 100),
-            ],
-        ),
-        (
-            "OPPO A78 5G",
-            "2026-04-18",
-            "Segundo perfil del reporte: no llega al 100% en la ventana de 52 min.",
-            [
-                (0, 0), (5, 11), (10, 22), (15, 33), (20, 43), (25, 53),
-                (30, 63), (35, 72), (40, 74), (45, 84), (50, 88), (52, 90),
-            ],
-        ),
-        (
-            "Google Pixel 7a",
-            "2026-04-20",
-            "Carga optimizada; temperatura estable vía ADB.",
-            [
-                (0, 0), (5, 15), (10, 28), (15, 39), (20, 49), (25, 58),
-                (30, 66), (35, 75), (40, 84), (45, 91), (49, 98), (51, 100),
-            ],
-        ),
-    ]
-    for device, sdate, notes, pairs in demos:
+
+def ensure_main_device_session() -> Path:
+    """Sesión principal del proyecto — POCO X 7 Pro (datos del reporte)."""
+    SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
+    notes = (
+        "Dispositivo principal del proyecto ITT. Bitácora experimental del reporte "
+        "(modo avión, muestreo cada 5 min, lectura ADB)."
+    )
+    rows = _rows_from_pairs(
+        SAMPLES_MAIN,
+        device_label=MAIN_DEVICE_NAME,
+        session_date=MAIN_SESSION_DATE,
+        notes=notes,
+    )
+    payload = _build_payload(
+        rows,
+        device_label=MAIN_DEVICE_NAME,
+        platform="android",
+        session_date=MAIN_SESSION_DATE,
+        notes=notes,
+        session_id="poco_x7_pro",
+    )
+    path = _write_session_file(payload, filename=MAIN_SESSION_FILENAME)
+    _remove_legacy_main_sessions()
+    return path
+
+
+def ensure_demo_sessions() -> None:
+    """Asegura la sesión POCO X 7 Pro y crea otras demos solo si faltan."""
+    SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
+    ensure_main_device_session()
+    for device, sdate, notes, pairs in OTHER_DEMO_SESSIONS:
+        filename = f"charge_samples_{sdate}_{_slug(device)}.json"
+        if (SESSIONS_DIR / filename).exists():
+            continue
         rows = _rows_from_pairs(pairs, device_label=device, session_date=sdate, notes=notes)
         payload = _build_payload(rows, device_label=device, platform="android", session_date=sdate, notes=notes)
-        _write_session_file(payload)
+        _write_session_file(payload, filename=filename)
 
 
 def list_sessions() -> list[SessionInfo]:
@@ -189,6 +221,7 @@ def list_sessions() -> list[SessionInfo]:
         df = rows_to_dataframe(rows)
         t100 = float(df["t_min"].max()) if not df.empty else 0.0
         final = float(df["level"].iloc[-1]) if not df.empty else 0.0
+        is_main = path.name == MAIN_SESSION_FILENAME
         out.append(
             SessionInfo(
                 filename=path.name,
@@ -199,8 +232,10 @@ def list_sessions() -> list[SessionInfo]:
                 t_100_min=t100,
                 final_level=final,
                 notes=str(raw.get("notes", "")),
+                is_main=is_main,
             )
         )
+    out.sort(key=lambda s: (0 if s.is_main else 1, s.session_date))
     return out
 
 
