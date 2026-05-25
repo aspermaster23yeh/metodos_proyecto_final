@@ -62,3 +62,16 @@ data/
 ## Próximos pasos (fuera del alcance actual)
 
 - Comparativa de regresión lineal vs logarítmica en el Lab (hoy: spline + Newton)
+-  Battery Lab — muestreo ADB
+
+Lectura en vivo de voltaje, corriente y porcentaje vía adb shell
+Preset Metodología (5 min) fija el auto-refresh a 300 s, alineado con la bitácora experimental
+Historial de sesiones por dispositivo y fecha
+Modo demo sin hardware conectado
+
+📐 Métodos Numéricos implementados
+
+Interpolación de Newton (diferencias divididas)
+Ajuste de curva con scipy.curve_fit
+Spline cúbico
+Comparativa visual entre modelos con métricas de error
