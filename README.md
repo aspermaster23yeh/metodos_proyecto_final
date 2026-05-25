@@ -29,6 +29,7 @@ Navegación (asistente por pasos en español):
 |--------|---------|-------------|
 | **Laboratorio** | `main.py` | Metodología, datos del reporte (12×5 min), sigmoide, Newton-Raphson |
 | **Centro del proyecto** | `pages/1_Centro_Proyecto.py` | Resumen, actividades y Gantt (02 abr – 08 may 2026) |
+| **Conclusiones** | `pages/2_Conclusiones.py` | Qué hicimos, cómo, programación, diseño y conclusiones finales |
 
 ## Project Hub
 
@@ -48,9 +49,11 @@ main.py              # Battery Lab (home)
 theme.py             # Estilos compartidos
 tasks_store.py       # Modelo y persistencia de tareas
 pages/
-  2_Project_Hub.py   # Dashboard de proyecto
+  1_Centro_Proyecto.py
+  2_Conclusiones.py
 data/
-  project_tasks.json # Fuente de verdad (generado al primer arranque)
+  project_tasks.json
+  charge_samples.json   # Bitácora en vivo (opcional)
 ```
 
 ## Próximos pasos (fuera del alcance actual)
