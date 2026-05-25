@@ -11,17 +11,26 @@ import time
 from dataclasses import dataclass
 from datetime import datetime
 
-import numpy as np
 import pandas as pd
-import plotly.graph_objects as go
 import streamlit as st
-from scipy.interpolate import UnivariateSpline
-from scipy.optimize import newton
 
-from battery_models import logistic_c, newton_time_for_target, report_fit_stats
+from battery_models import (
+    compare_models,
+    comparison_verdict_es,
+    device_summary,
+    estimate_cv_start_min,
+    format_newton_steps,
+    multivar_fit_note,
+    newton_batch_table,
+    newton_time_for_target,
+    try_logistic_curve_fit,
+)
+from lab_charts import fig_charge_simple, fig_dual_devices, fig_model_comparison
 from report_data import (
     CHARGE_TIME_REAL_MIN,
     DELIVERY_DATE,
+    DEVICE_ALT_LABEL,
+    DEVICE_MAIN_LABEL,
     EFFICIENCY_PCT,
     ENERGY_WH,
     INSTITUTION,
@@ -29,6 +38,7 @@ from report_data import (
     METHODOLOGY_STEPS,
     NEWTON_80_ITER,
     NEWTON_80_MIN,
+    NEWTON_BATCH_TARGETS,
     SAMPLES_ALT,
     SAMPLES_MAIN,
     T0_INFL,
@@ -38,7 +48,7 @@ from report_data import (
     samples_dataframe,
 )
 from sample_store import clear_session, export_csv_bytes, load_session, rows_to_dataframe, save_session
-from theme import ACCENT_CYAN, ACCENT_YELLOW, BG, GRID, TEXT_MUTED, inject_global_style
+from theme import ACCENT_CYAN, ACCENT_YELLOW, inject_global_style
 from wizard_ui import render_step_header, step_nav_buttons
 
 
@@ -182,121 +192,6 @@ def _capture_adb_sample(adb_bin: str) -> bool:
         temperature_c=reading.temperature_c,
     )
     return True
-
-
-class BatteryNumericEngine:
-    def __init__(self, times_h: np.ndarray, levels: np.ndarray) -> None:
-        self._t = np.asarray(times_h, dtype=float).ravel()
-        self._y = np.asarray(levels, dtype=float).ravel()
-        order = np.argsort(self._t)
-        self._t, self._y = self._t[order], self._y[order]
-        self._spline: UnivariateSpline | None = None
-
-    def fit_smoothing_spline(self, smoothing: float | None = None) -> UnivariateSpline:
-        n = self._t.size
-        k = int(min(3, max(1, n - 1)))
-        s = (
-            max(0.0, (n * float(np.var(self._y))) * 0.05)
-            if smoothing is None and n >= 4
-            else float(smoothing or 0.0)
-        )
-        self._spline = UnivariateSpline(self._t, self._y, k=k, s=s)
-        return self._spline
-
-    def evaluate(self, t_grid: np.ndarray) -> np.ndarray:
-        if self._spline is None:
-            self.fit_smoothing_spline()
-        assert self._spline is not None
-        return self._spline(t_grid)
-
-    def r2_and_ssr(self) -> tuple[float, float]:
-        if self._spline is None:
-            self.fit_smoothing_spline()
-        assert self._spline is not None
-        y_hat = self._spline(self._t)
-        ss_res = float(np.sum((self._y - y_hat) ** 2))
-        ss_tot = float(np.sum((self._y - np.mean(self._y)) ** 2))
-        return (1.0 - ss_res / ss_tot if ss_tot > 0 else 1.0), ss_res
-
-    def time_to_soc_newton(self, target: float = 100.0, tol: float = 1e-4, maxiter: int = 80):
-        if self._spline is None:
-            self.fit_smoothing_spline()
-        sp = self._spline
-        d1 = sp.derivative(n=1)
-
-        def f(tt: float) -> float:
-            return float(sp(tt) - target)
-
-        def fprime(tt: float) -> float:
-            return float(d1(tt))
-
-        t_last, y_last = float(self._t[-1]), float(self._y[-1])
-        if y_last >= target - 1e-6:
-            return t_last, "Ya alcanzó el objetivo"
-        dt = max(self._t[-1] - self._t[-2], 1e-6) if self._t.size >= 2 else 1e-6
-        slope = (self._y[-1] - self._y[-2]) / dt
-        if slope <= 1e-6:
-            return None, "Serie no creciente"
-        t0 = t_last + max((target - y_last) / slope, 1e-3)
-        try:
-            root = newton(f, t0, fprime=fprime, tol=tol, maxiter=maxiter)
-        except RuntimeError as exc:
-            return None, f"Sin convergencia: {exc}"
-        return (float(root), "Convergió") if np.isfinite(root) else (None, "Raíz no finita")
-
-
-def _fig_charge(
-    df: pd.DataFrame,
-    t_model: np.ndarray | None = None,
-    y_model: np.ndarray | None = None,
-    t_smooth_h: np.ndarray | None = None,
-    y_smooth: np.ndarray | None = None,
-) -> go.Figure:
-    fig = go.Figure()
-    fig.add_trace(
-        go.Scatter(
-            x=df["t_min"],
-            y=df["level"],
-            mode="markers+lines",
-            name="Medido",
-            line=dict(color=ACCENT_YELLOW, width=1),
-            marker=dict(size=8, color=ACCENT_YELLOW),
-        )
-    )
-    if t_model is not None and y_model is not None:
-        fig.add_trace(
-            go.Scatter(
-                x=t_model,
-                y=y_model,
-                mode="lines",
-                name="Sigmoide C(t)",
-                line=dict(color=ACCENT_CYAN, width=2),
-            )
-        )
-    if t_smooth_h is not None and y_smooth is not None:
-        fig.add_trace(
-            go.Scatter(
-                x=t_smooth_h * 60,
-                y=y_smooth,
-                mode="lines",
-                name="Spline S(t)",
-                line=dict(color="#B388FF", width=1, dash="dot"),
-            )
-        )
-    fig.add_hline(y=80, line_dash="dash", line_color=TEXT_MUTED, annotation_text="80% CC→CV")
-    fig.add_hline(y=100, line_dash="dash", line_color=TEXT_MUTED, annotation_text="100%")
-    fig.update_layout(
-        template="plotly_dark",
-        paper_bgcolor=BG,
-        plot_bgcolor=BG,
-        title=dict(text="Carga (%) vs tiempo (min)", font=dict(color=ACCENT_CYAN)),
-        xaxis_title="t (min)",
-        yaxis_title="C (%)",
-        yaxis=dict(range=[0, 105]),
-        height=480,
-        legend=dict(orientation="h", y=1.05),
-    )
-    return fig
 
 
 def _ensure_data() -> pd.DataFrame:
@@ -492,34 +387,96 @@ def step_recoleccion() -> None:
     cols_show = [c for c in ["t_min", "level", "voltage_mv", "temperature_c", "source", "timestamp"] if c in df.columns]
     st.dataframe(df[cols_show], use_container_width=True, hide_index=True)
     st.caption("Protocolo: modo avión, brillo 0%, registro cada 5 min desde <5% hasta 100%.")
-    t_m = np.linspace(0, max(float(df["t_min"].max()), 1), 200)
-    st.plotly_chart(_fig_charge(df, t_m, logistic_c(t_m)), use_container_width=True)
+    t_cv = estimate_cv_start_min(df)
+    st.plotly_chart(fig_charge_simple(df, t_cv), use_container_width=True)
 
 
 def step_modelo() -> None:
-    st.subheader("Modelación y R²")
+    st.subheader("Modelación y comparativa de modelos")
     df = _ensure_data()
-    stats = report_fit_stats(df)
-    t_line = np.linspace(0, float(df["t_min"].max()), 200)
-    y_log = logistic_c(t_line)
-    c1, c2, c3 = st.columns(3)
-    c1.metric("R² logístico", f"{stats['r2_logistic']:.4f}")
-    c2.metric("R² lineal", f"{stats['r2_linear']:.4f}")
-    c3.metric("Muestras", int(stats["n_samples"]))
+    if len(df) < 2:
+        st.warning("Se necesitan al menos 2 muestras. Vuelve a **Recolección** o carga el reporte.")
+        return
 
-    engine = BatteryNumericEngine(df["t_h"].to_numpy(), df["level"].to_numpy())
-    engine.fit_smoothing_spline()
-    t_h = np.linspace(0, float(df["t_h"].max()) + 0.1, 200)
-    y_sp = engine.evaluate(t_h)
-    r2s, _ = engine.r2_and_ssr()
-    st.metric("R² spline (Lab)", f"{r2s:.4f}")
-    st.plotly_chart(_fig_charge(df, t_line, y_log, t_h, y_sp), use_container_width=True)
-    st.caption(f"Parámetros del reporte: k={K_RATE}, t₀={T0_INFL} min.")
+    cmp = compare_models(df)
+    st.markdown("#### Tabla R²")
+    tabla = pd.DataFrame(
+        [
+            {"Modelo": "Lineal", "R²": f"{cmp.r2_linear:.4f}", "Nota": "Una recta; no satura en 100%."},
+            {"Modelo": "Logístico", "R²": f"{cmp.r2_logistic:.4f}", "Nota": "Sigmoide CC-CV del reporte."},
+            {"Modelo": "Spline", "R²": f"{cmp.r2_spline:.4f}", "Nota": "Ajuste flexible punto a punto."},
+        ]
+    )
+    st.dataframe(tabla, use_container_width=True, hide_index=True)
+    st.markdown(comparison_verdict_es(cmp))
+    if cmp.t_cv_min is not None:
+        st.caption(f"Transición estimada a fase **CV** (~80%): ≈ **{cmp.t_cv_min:.1f} min**.")
+    st.plotly_chart(fig_model_comparison(df, cmp), use_container_width=True)
+    st.caption(f"Sigmoide de referencia: k={K_RATE}, t₀={T0_INFL} min.")
+
+    with st.expander("¿Por qué falló el ajuste simultáneo de k y t₀?"):
+        st.markdown(multivar_fit_note())
+        fit = try_logistic_curve_fit(df)
+        if fit["ok"]:
+            st.success(fit["message"])
+        else:
+            st.warning(fit["message"])
+        st.markdown(
+            "**Próximo paso recomendado:** **Levenberg-Marquardt** "
+            "(`scipy.optimize.curve_fit` / `least_squares`) con semilla estable y, si hace falta, "
+            "excluir los extremos 0% y 100% del ajuste global."
+        )
+
+    st.markdown("---")
+    st.markdown("#### Dos dispositivos del reporte")
+    df_main = samples_dataframe(SAMPLES_MAIN)
+    df_alt = samples_dataframe(SAMPLES_ALT)
+    s_main = device_summary(df_main)
+    s_alt = device_summary(df_alt)
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown(f"**{DEVICE_MAIN_LABEL}**")
+        st.metric("Tiempo a 100%", f"{s_main['t_100_min']:.0f} min")
+        st.metric("R² logístico", f"{s_main['r2_logistic']:.4f}")
+        if s_main["initial_slope_pct_per_min"] is not None:
+            st.metric("Pendiente inicial", f"{s_main['initial_slope_pct_per_min']:.2f} %/min")
+        st.metric("Carga final", f"{s_main['final_level']:.0f} %")
+    with c2:
+        st.markdown(f"**{DEVICE_ALT_LABEL}**")
+        st.metric("Tiempo a 100%", f"{s_alt['t_100_min']:.0f} min")
+        st.metric("R² logístico", f"{s_alt['r2_logistic']:.4f}")
+        if s_alt["initial_slope_pct_per_min"] is not None:
+            st.metric("Pendiente inicial", f"{s_alt['initial_slope_pct_per_min']:.2f} %/min")
+        st.metric("Carga final", f"{s_alt['final_level']:.0f} %")
+
+    st.plotly_chart(fig_dual_devices(df_main, df_alt, DEVICE_MAIN_LABEL, DEVICE_ALT_LABEL), use_container_width=True)
+    st.dataframe(
+        pd.DataFrame(
+            [
+                {
+                    "Dispositivo": DEVICE_MAIN_LABEL,
+                    "t@100% (min)": s_main["t_100_min"],
+                    "R² log.": s_main["r2_logistic"],
+                    "Pendiente 0–5 min (%/min)": s_main["initial_slope_pct_per_min"],
+                },
+                {
+                    "Dispositivo": DEVICE_ALT_LABEL,
+                    "t@100% (min)": s_alt["t_100_min"],
+                    "R² log.": s_alt["r2_logistic"],
+                    "Pendiente 0–5 min (%/min)": s_alt["initial_slope_pct_per_min"],
+                },
+            ]
+        ),
+        use_container_width=True,
+        hide_index=True,
+    )
 
 
 def step_newton() -> None:
     st.subheader("Newton-Raphson")
-    st.markdown("Resolver **C(t) − objetivo = 0** para estimar en qué minuto se alcanza un porcentaje.")
+    st.markdown("Resolver **C(t) − objetivo = 0** con el modelo logístico del reporte.")
+
+    st.markdown("#### Una meta (con iteraciones)")
     objetivo = st.slider("Porcentaje objetivo (%)", 10, 99, 80)
     t_star, msg, steps = newton_time_for_target(float(objetivo))
     if t_star is not None:
@@ -528,11 +485,41 @@ def step_newton() -> None:
         st.success(f"Tiempo estimado: **{mm} min {ss} s** — {msg}")
     else:
         st.error(msg)
-    if steps:
-        st.dataframe(pd.DataFrame(steps), use_container_width=True, hide_index=True)
-    st.info(
-        f"Referencia del reporte: 80% en **{NEWTON_80_MIN} min** "
-        f"({NEWTON_80_ITER} iteraciones). El ajuste multivariable (k, t₀) reportó NaN."
+
+    df_steps = format_newton_steps(steps)
+    if not df_steps.empty:
+        st.dataframe(df_steps, use_container_width=True, hide_index=True)
+        st.download_button(
+            "Descargar iteraciones (CSV)",
+            data=df_steps.to_csv(index=False).encode("utf-8"),
+            file_name="newton_iteraciones.csv",
+            mime="text/csv",
+        )
+
+    st.markdown("#### Tabla completa (10% … 99%)")
+    if st.button("Calcular 10%, 20%, … 99%", type="primary"):
+        st.session_state.newton_batch = newton_batch_table(NEWTON_BATCH_TARGETS)
+
+    if "newton_batch" in st.session_state:
+        batch = st.session_state.newton_batch
+        st.dataframe(batch, use_container_width=True, hide_index=True)
+        st.download_button(
+            "Descargar soluciones (CSV)",
+            data=batch.to_csv(index=False).encode("utf-8"),
+            file_name="newton_soluciones.csv",
+            mime="text/csv",
+        )
+        row80 = batch[batch["% objetivo"] == 80]
+        if not row80.empty:
+            t80 = row80["t* (min)"].iloc[0]
+            st.info(
+                f"**80%:** modelo ≈ **{t80} min** · reporte ≈ **{NEWTON_80_MIN} min** "
+                f"({NEWTON_80_ITER} iteraciones en el documento)."
+            )
+
+    st.caption(
+        "Newton **escalar** (tiempo para un %) converge; el ajuste **multivariable** de k y t₀ "
+        "del reporte dio NaN — ver expander en el paso Modelo."
     )
 
 

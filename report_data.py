@@ -66,6 +66,11 @@ EFFICIENCY_PCT = 28.5  # útil ≈ 100 - 71.5 pérdidas
 NEWTON_80_MIN = 35.55
 NEWTON_80_ITER = 5
 
+NEWTON_BATCH_TARGETS = [10, 20, 25, 30, 40, 50, 60, 70, 75, 80, 85, 90, 95, 99]
+
+DEVICE_MAIN_LABEL = "Dispositivo principal (reporte)"
+DEVICE_ALT_LABEL = "Dispositivo alternativo (reporte)"
+
 METHODOLOGY_STEPS = [
     ("1", "Descarga", "Llevar el dispositivo por debajo del 5% con uso controlado."),
     ("2", "Bitácora", "Registrar porcentaje cada 5 minutos hasta el 100%."),
@@ -79,7 +84,7 @@ WIZARD_LAB_STEPS = [
     ("inicio", "Inicio", "Contexto del proyecto y objetivos."),
     ("metodo", "Metodología", "Protocolo CC-CV y pasos del experimento."),
     ("datos", "Recolección", "Muestras cada 5 min (reporte o ADB en vivo)."),
-    ("modelo", "Modelo", "Curva sigmoide, spline y coeficiente R²."),
+    ("modelo", "Modelo", "Comparativa lineal/logística/spline, CC-CV y dos dispositivos."),
     ("newton", "Newton-Raphson", "Tiempo para alcanzar un % de carga."),
     ("stats", "Resultados", "Estadísticas del reporte y conclusiones."),
 ]

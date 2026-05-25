@@ -27,7 +27,7 @@ Navegación (asistente por pasos en español):
 
 | Página | Archivo | Descripción |
 |--------|---------|-------------|
-| **Laboratorio** | `main.py` | Metodología, datos del reporte (12×5 min), sigmoide, Newton-Raphson |
+| **Laboratorio** | `main.py` | Metodología, bitácora ADB/manual, comparativa lineal/logística/spline, CC-CV, dos dispositivos, Newton batch |
 | **Centro del proyecto** | `pages/1_Centro_Proyecto.py` | Resumen, actividades y Gantt (02 abr – 08 may 2026) |
 | **Conclusiones** | `pages/2_Conclusiones.py` | Qué hicimos, cómo, programación, diseño y conclusiones finales |
 
@@ -45,7 +45,9 @@ En el sidebar, el preset **Metodología (5 min)** fija el auto-refresh a 300 s, 
 ## Estructura
 
 ```
-main.py              # Battery Lab (home)
+main.py              # Laboratorio (home)
+battery_models.py    # Comparativa de modelos, Newton, curve_fit
+lab_charts.py        # Gráficas Plotly
 theme.py             # Estilos compartidos
 tasks_store.py       # Modelo y persistencia de tareas
 pages/
